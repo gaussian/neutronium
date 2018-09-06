@@ -1,6 +1,4 @@
-"""
-(c) 2017 Gaussian Holdings, LLC
-"""
+
 import types
 
 

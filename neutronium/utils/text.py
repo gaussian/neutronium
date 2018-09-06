@@ -1,6 +1,3 @@
-"""
-(c) 2017 Gaussian Holdings, LLC
-"""
 
 import difflib
 import random
