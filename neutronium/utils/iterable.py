@@ -91,3 +91,9 @@ def get_dict_from_tuple(input_tuple):
     for item in input_tuple:
         output_dict[str(item[0])] = item[1]
     return output_dict
+
+
+def intersection(lst1, lst2):
+    # Source: https://www.geeksforgeeks.org/python-intersection-two-lists/
+    temp = set(lst2)
+    return [value for value in lst1 if value in temp]
