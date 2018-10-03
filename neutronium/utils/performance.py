@@ -34,8 +34,8 @@ class Performance:
         reset_queries()
 
     @staticmethod
-    def print_latest_queries(num_queries=60, stop_program=False):
-        for connection_id in ('default', 'replica1'):
+    def print_latest_queries(num_queries=60, connection_ids=('default',), stop_program=False):
+        for connection_id in connection_ids:
             print(f"== CONNECTION: {connection_id}")
             [print(f"[{q['time']}s] {q['sql']}")
              for q in connections[connection_id].queries[-num_queries:]]
