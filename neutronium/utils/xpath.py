@@ -12,7 +12,7 @@ def get_xml_doc_from_html(html):
     except AttributeError:
         pass
 
-    if not html:
+    if not html or html.isspace():
         return None
 
     try:
