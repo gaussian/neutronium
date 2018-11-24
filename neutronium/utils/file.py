@@ -1,5 +1,7 @@
 import os
+import tempfile
 import pickle
+from contextlib import contextmanager
 
 from django.core import serializers
 
@@ -65,3 +67,14 @@ def serialize_to_file(querysets, file_path):
     with open(file_path, "w+") as out:
         for queryset in querysets:
             serializers.serialize('json', queryset, stream=out)
+
+
+@contextmanager
+def temporary_named_file(data):
+    """Windows-friendly temp named file context manager."""
+    fp = tempfile.NamedTemporaryFile(delete=False)
+    fp.write(data)
+    filepath = fp.name
+    fp.close()
+    yield fp
+    os.remove(filepath)
