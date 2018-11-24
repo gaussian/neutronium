@@ -28,9 +28,10 @@ def load_pickle_from_file_or_function(file_path, obj_create_func):
     return obj
 
 
-def load_from_file(file_path, encoding=None):
+def load_from_file(file_path, encoding=None, binary=False):
     if os.path.exists(file_path):
-        with open(file_path, 'r', encoding=encoding) as handle:
+        mode = 'rb' if binary else 'r'
+        with open(file_path, mode=mode, encoding=encoding) as handle:
             return handle.read()
     return None
 
@@ -74,7 +75,6 @@ def temporary_named_file(data):
     """Windows-friendly temp named file context manager."""
     fp = tempfile.NamedTemporaryFile(delete=False)
     fp.write(data)
-    filepath = fp.name
     fp.close()
     yield fp
-    os.remove(filepath)
+    os.remove(fp.name)
