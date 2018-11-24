@@ -71,9 +71,9 @@ def serialize_to_file(querysets, file_path):
 
 
 @contextmanager
-def temporary_named_file(data, encoding=None):
+def temporary_named_file(data, mode='w+b', encoding=None):
     """Windows-friendly temp named file context manager."""
-    fp = tempfile.NamedTemporaryFile(delete=False, encoding=encoding)
+    fp = tempfile.NamedTemporaryFile(delete=False, encoding=encoding, mode=mode)
     fp.write(data)
     fp.close()
     yield fp
