@@ -3,10 +3,13 @@ import difflib
 import random
 import re
 import string
+from typing import List
 
 from django.conf import settings
 from inflection import singularize, pluralize
 from unidecode import unidecode
+
+from neutron.utils.iterable import multi_needle_search
 
 
 def multiple_replace(text, replace_dict, flags=0) -> str:
@@ -46,7 +49,7 @@ def rchop(text, ending):
     return text
 
 
-def normalize_for_nlp(text):
+def normalize_for_nlp(text: str):
     global multiple_replace_nlp
 
     # Normalize double quote characters
@@ -102,7 +105,7 @@ def normalize_for_nlp(text):
 
 
 # TODO: WHY IS THIS WEIRD
-def normalize_for_nlp_weird(text):
+def normalize_for_nlp_weird(text: str) -> str:
     text = normalize_for_nlp(text)
     if '\'' in text:
         text = re.sub(r'(^|\s)\'', '\g<1>\' ', text)
@@ -113,7 +116,7 @@ def normalize_for_nlp_weird(text):
 re_pattern_utf8_fix = re.compile(u'[^\u0000-\uD7FF\uE000-\uFFFF]', re.UNICODE)
 
 
-def normalize_web_text(text):
+def normalize_web_text(text: str) -> str:
     """
     Normalize text downloaded from the web. This does slightly more
     than normalizing text for NLP (e.g removes emojis).
@@ -143,7 +146,7 @@ def normalize_web_text(text):
     return multiple_replace_bad_texts(text)
 
 
-def normalize_immediately_after_download(text):
+def normalize_immediately_after_download(text: str) -> str:
     # Remove newlines in XML, as well as bad space characters
     # if text.startswith("<"):
     #     text = re.sub(r"[\xa0\n]]", " ", text)
@@ -158,7 +161,48 @@ def normalize_immediately_after_download(text):
     return text
 
 
-def strip_problematic_sec_tags(html):
+def normalize_stripping_insignificant_text_lines(text: str, bad_needles: List[str]=None) -> str:
+    """
+    Strip out short lines and lines with few letters and words.
+    Optionally, also strip out any lines that contain one or more
+    of the "bad needles" list provided.
+    """
+
+    # Init the "bad needles"
+    bad_needles = bad_needles or None
+
+    # Split into lines
+    lines = text.split("\n")
+    lines_to_keep = []
+    for line in lines:
+
+        # Short lines
+        if len(line) < 8:
+            continue
+
+        # Lines with too few letters
+        if sum(c.isalpha() for c in line) < 5:
+            continue
+
+        # [HACK] Strip bad chars here
+        line = line.strip().replace(u'\xa0', u' ')
+
+        # Lines with too few words
+        words = line.split(' ')
+        if len(words) < 11:
+            continue
+
+        # Lines containing bad terms
+        if multi_needle_search(line.lower(), bad_needles):
+            continue
+
+        # Not a bad line - append it to the list
+        lines_to_keep.append(line)
+
+    return "\n\n".join(lines_to_keep)
+
+
+def strip_problematic_sec_tags(html: str) -> str:
     tags_to_remove = re.compile(r'('
                                 #r'style="[^>]*"|'
                                 r'<\s*font\s*.*?>|<\s*/font\s*>|'
