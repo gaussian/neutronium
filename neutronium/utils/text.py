@@ -192,8 +192,8 @@ def normalize_stripping_insignificant_text_lines(text: str, bad_needles: List[st
         if len(words) < 11:
             continue
 
-        # Lines containing bad terms
-        if multi_needle_search(line.lower(), bad_needles):
+        # Lines containing bad terms, if needed
+        if bad_needles and multi_needle_search(line.lower(), bad_needles):
             continue
 
         # Not a bad line - append it to the list
