@@ -1,9 +1,11 @@
 import lxml.html
+import lxml.etree.ParserError
 
 from neutron.utils.logging import log_sys_exception
 
 
 def get_xml_doc_from_html(html):
+    # Empty or missing
     if not html:
         return None
 
@@ -12,12 +14,18 @@ def get_xml_doc_from_html(html):
     except AttributeError:
         pass
 
+    # Empty or missing
     if not html or html.isspace():
         return None
 
+    # Get XML
     try:
         return lxml.html.fromstring(html)
-    except Exception:
+
+    # Parser error, likely no-text HTML (i.e. whole thing is comments or tags)
+    except lxml.etree.ParserError as e:
+        if str(e) == "Document is empty":
+            return None
         log_sys_exception("LXML HTML parse error in `fromstring`")
 
 
