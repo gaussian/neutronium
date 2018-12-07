@@ -1,5 +1,5 @@
 import lxml.html
-import lxml.etree.ParserError
+import lxml.etree
 
 from neutron.utils.logging import log_sys_exception
 
