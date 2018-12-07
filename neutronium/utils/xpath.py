@@ -26,7 +26,7 @@ def get_xml_doc_from_html(html):
     except lxml.etree.ParserError as e:
         if str(e) == "Document is empty":
             return None
-        log_sys_exception("LXML HTML parse error in `fromstring`")
+        raise
 
 
 def get_xpath_from_html(html, xpath_string):
