@@ -1,6 +1,8 @@
 
 import types
 
+from typing import Collection
+
 
 def batch(iterable, batch_size):
     assert isinstance(iterable, list)
@@ -66,7 +68,7 @@ def remove_objs_from_set(master_set, removal_objs):
     return master_set
 
 
-def multi_needle_search(haystack, needles):
+def multi_needle_search(haystack: Collection, needles: Collection):
     for needle in needles:
         if needle in haystack:
             return True

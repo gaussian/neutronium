@@ -3,7 +3,7 @@ import difflib
 import random
 import re
 import string
-from typing import List
+from typing import List, Optional
 
 from django.conf import settings
 from inflection import singularize, pluralize
@@ -161,15 +161,20 @@ def normalize_immediately_after_download(text: str) -> str:
     return text
 
 
-def normalize_stripping_insignificant_text_lines(text: str, bad_needles: List[str]=None) -> str:
+def normalize_stripping_insignificant_text_lines(text: str,
+                                                 bad_needles: Optional[List[str]] = None
+                                                 ) -> str:
     """
     Strip out short lines and lines with few letters.
     Optionally, also strip out short lines that contain one or more
     of the "bad needles" list provided.
     """
 
+    if not text:
+        raise ValueError("Need text to normalize")
+
     # Init the "bad needles"
-    bad_needles = bad_needles or None
+    bad_needles = bad_needles or []
 
     # Split into lines
     lines = text.split("\n")
@@ -189,7 +194,7 @@ def normalize_stripping_insignificant_text_lines(text: str, bad_needles: List[st
 
         # Lines with too few words that contain bad terms, if needed
         words = line.split(' ')
-        if bad_needles and len(words) < 11 and multi_needle_search(line.lower(), bad_needles):
+        if len(words) < 11 and bad_needles and multi_needle_search(line.lower(), bad_needles):
             continue
 
         # Not a bad line - append it to the list
