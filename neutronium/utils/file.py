@@ -20,6 +20,9 @@ def pickle_to_file(obj, file_path: str):
     # Make directory if needed
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
+    # Erase the file
+    erase_file(file_path)
+
     # Pickle
     with open(file_path, 'wb') as handle:
         pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -58,26 +61,26 @@ def save_to_file_overwrite(text, file_path: str):
         handle.write(text)
 
 
-def load_list_from_file(file_path, encoding=None):
+def load_list_from_file(file_path: str, encoding=None):
     file_contents = load_from_file(file_path, encoding=encoding)
     if file_contents:
         return file_contents.split('\n')
     return None
 
 
-def append_list_to_file(file_path, items):
+def append_list_to_file(file_path: str, items):
     with open(file_path, 'ab+') as handle:
         for item in items:
             handle.write((item + '\n').encode('utf-8'))
 
 
-def erase_file(file_path):
+def erase_file(file_path: str):
     if os.path.exists(file_path):
         with open(file_path, 'w+') as handle:
             handle.write('')
 
 
-def serialize_to_file(querysets, file_path):
+def serialize_to_file(querysets, file_path: str):
     with open(file_path, "w+") as out:
         for queryset in querysets:
             serializers.serialize('json', queryset, stream=out)
