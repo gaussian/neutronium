@@ -6,24 +6,37 @@ from contextlib import contextmanager
 from django.core import serializers
 
 
-def load_pickle_from_file_or_function(file_path, obj_create_func):
+def load_pickle_from_file(file_path):
     # Open and load if file exists
     if os.path.exists(file_path):
         with open(file_path, 'rb') as handle:
-            obj = pickle.load(handle)
+            return pickle.load(handle)
 
     # File doesn't exist
-    else:
+    return None
+
+
+def pickle_to_file(obj, file_path):
+    # Make directory if needed
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    # Pickle
+    with open(file_path, 'wb') as handle:
+        pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_pickle_from_file_or_function(file_path, obj_create_func):
+    # Try to load pickle
+    obj = load_pickle_from_file(file_path)
+
+    # File doesn't exist
+    if not obj:
 
         # Create the object
         obj = obj_create_func()
 
-        # Make directory if needed
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
         # Pickle the object
-        with open(file_path, 'wb') as handle:
-            pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle_to_file(obj, file_path)
 
     return obj
 
