@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from django.core import serializers
 
 
-def load_pickle_from_file(file_path):
+def load_pickle_from_file(file_path: str):
     # Open and load if file exists
     if os.path.exists(file_path):
         with open(file_path, 'rb') as handle:
@@ -16,7 +16,7 @@ def load_pickle_from_file(file_path):
     return None
 
 
-def pickle_to_file(obj, file_path):
+def pickle_to_file(obj, file_path: str):
     # Make directory if needed
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
@@ -25,7 +25,7 @@ def pickle_to_file(obj, file_path):
         pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def load_pickle_from_file_or_function(file_path, obj_create_func):
+def load_pickle_from_file_or_function(file_path: str, obj_create_func):
     # Try to load pickle
     obj = load_pickle_from_file(file_path)
 
@@ -41,7 +41,7 @@ def load_pickle_from_file_or_function(file_path, obj_create_func):
     return obj
 
 
-def load_from_file(file_path, encoding=None, binary=False):
+def load_from_file(file_path: str, encoding=None, binary=False):
     if os.path.exists(file_path):
         mode = 'rb' if binary else 'r'
         with open(file_path, mode=mode, encoding=encoding) as handle:
@@ -49,7 +49,7 @@ def load_from_file(file_path, encoding=None, binary=False):
     return None
 
 
-def save_to_file_overwrite(text, file_path):
+def save_to_file_overwrite(text, file_path: str):
     # Make directory if needed
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
