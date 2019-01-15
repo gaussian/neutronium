@@ -10,9 +10,12 @@ def load_pickle_from_file(file_path: str):
     # Open and load if file exists
     if os.path.exists(file_path):
         with open(file_path, 'rb') as handle:
-            return pickle.load(handle)
+            try:
+                return pickle.load(handle)
+            except EOFError:
+                pass
 
-    # File doesn't exist
+    # File doesn't exist or is empty/poorly formatted
     return None
 
 
