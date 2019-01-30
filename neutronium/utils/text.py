@@ -154,6 +154,7 @@ def normalize_immediately_after_download(text: str) -> str:
     # # If not HTML, just remove the bad space characters
     # else:
     text = text.replace(u'\xa0', u' ')
+    text = text.replace(u'\xad', u'-')
 
     # Remove other bad characters
     text = re.sub(r"[\x00-\x08\x0b\x0e-\x1f\x7f]", "", text)
