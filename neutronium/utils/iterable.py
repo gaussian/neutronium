@@ -99,3 +99,32 @@ def intersection(lst1, lst2):
     # Source: https://www.geeksforgeeks.org/python-intersection-two-lists/
     temp = set(lst2)
     return [value for value in lst1 if value in temp]
+
+
+def is_in_sequence(list_inner: list, list_outer: list):
+    # No way a longer list can be contained by shorter
+    if len(list_inner) > len(list_outer):
+        return False
+
+    # Iterate through parent list (i) and inner list (j)
+    i, j = 0, 0
+    while i < len(list_outer):
+
+        # Check if values are the same - if so, advance i and j
+        if list_outer[i] == list_inner[j]:
+            i += 1
+            j += 1
+
+            # Matched all of inner list - we're done
+            if j == len(list_inner):
+                return True
+            continue
+
+        # Failed to match - reset j to search from start of inner list, and retreat by 1 on outer loop
+        elif j > 0:
+            j = 0
+        else:
+            i += 1
+
+    # No match found
+    return False
