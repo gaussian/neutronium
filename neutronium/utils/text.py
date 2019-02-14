@@ -5,11 +5,8 @@ import re
 import string
 from typing import List, Optional
 
-from django.conf import settings
 from inflection import singularize, pluralize
 from unidecode import unidecode
-
-from neutron.utils.iterable import multi_needle_search
 
 
 def multiple_replace(text, replace_dict, flags=0) -> str:
@@ -27,7 +24,6 @@ def make_multiple_replace_func(*args, **kwargs):
     return xlat
 
 
-multiple_replace_nlp = None
 multiple_replace_bad_texts = None
 
 
@@ -49,69 +45,6 @@ def rchop(text, ending):
     return text
 
 
-def normalize_for_nlp(text: str):
-    global multiple_replace_nlp
-
-    # Normalize double quote characters
-    if '“' in text or '”' in text:
-        text = re.sub(r'([^\s])“', '\g<1> "', text)  # any non whitespace followed by opening quote
-        text = re.sub(r'”([^\s])', '" \g<1>', text)  # any closing quote followed by non whitespace
-        # NOTE: turning “ or ” into " occurs in the multiple_replace below!
-        # text = re.sub(r'[“”]', '"', text)
-
-    # If there's a comma/period followed by a double quote, followed
-    # by NO SPACE, then insert a space
-    text = re.sub(r'([.,])"([^\s])', '\g<1>" \g<2>', text)
-
-    # Add spaces before and after dashes
-    # TODO: when move to SpaCy, should be able to remove this...?
-    if '—' in text:
-        text = re.sub(r'(\w)—', '\g<1> —', text)
-        text = re.sub(r'—(\w)', '— \g<1>', text)
-
-    # Remove hyphens within words
-    # TODO: when move to SpaCy, what happens here
-    # if '-' in text:
-    #     text = re.sub(r'(\w)-(\w)', '\g<1> \g<2>', text)
-
-    # Fix double periods
-    # text = re.sub(r'(\w)\.\.(\s)', '\g<1>.\g<2>', text)
-
-    # Perform simple replacements (in 1 pass)
-    if not multiple_replace_nlp:
-        multiple_replace_nlp = make_multiple_replace_func({
-            # Fix weird quotations
-            '‘': "'",
-            '’': "'",
-            '': "'",
-            '': "'",
-            '“': '"',
-            '”': '"',
-            # Remove asterisks
-            '*': '',
-            # Fix "percent"
-            "per cent": "percent",
-            # Remove (TM), (R)
-            '(TM)': '',
-            '(tm)': '',
-            '(R)': '',
-            '(r)': '',
-            # Fix ellipses
-            '…': '...',
-            # Normalize newlines
-            "\r\n": "\n",
-        })
-    return multiple_replace_nlp(text)
-
-
-# TODO: WHY IS THIS WEIRD
-def normalize_for_nlp_weird(text: str) -> str:
-    text = normalize_for_nlp(text)
-    if '\'' in text:
-        text = re.sub(r'(^|\s)\'', '\g<1>\' ', text)
-    return text
-
-
 # Regular expression pattern to remove UTF-8 greater than 3 bytes
 re_pattern_utf8_fix = re.compile(u'[^\u0000-\uD7FF\uE000-\uFFFF]', re.UNICODE)
 
@@ -123,38 +56,81 @@ def normalize_web_text(text: str) -> str:
     
     Actions:
     - Strip text
-    - Normalize for NLP (see above)
+    - Normalize for NLP (bunch of stuff)
     - Remove non UTF-8 characters (i.e. 4 byte characters like emojis)
     - Replace multi-spaces with single space
-    - Remove bad text (from Django settings)
     :param text: 
     :return: 
     """
 
-    global multiple_replace_bad_texts
-
     if not text:
         return ''
 
-    text = normalize_for_nlp(text.strip())
-    text = re_pattern_utf8_fix.sub(u'\uFFFD', text)
-    text = ' '.join(text.split(' '))
-    if not multiple_replace_bad_texts:
-        multiple_replace_bad_texts = make_multiple_replace_func(dict(zip(
-            settings.BAD_TEXTS, [" - "] * len(settings.BAD_TEXTS)
-        )))
-    return multiple_replace_bad_texts(text)
+    # If there's a comma/period followed by a double quote, followed
+    # by NO SPACE, then insert a space
+    # text = re.sub(r'([.,])"([^\s])', r'\g<1>" \g<2>', text)
+
+    # Fix double periods
+    # text = re.sub(r'(\w)\.\.(\s)', '\g<1>.\g<2>', text)
+
+    # Perform simple replacements
+    text = text.translate({
+        ''
+        # Add spaces before and after dashes
+        '—': ' — ',
+        # Standardize "hyphens with spaces"
+        ' - ': ' — ',
+        # Fix weird single quote marks
+        '‘': "'",
+        '’': "'",
+        '': "'",
+        '': "'",
+        # Fix directional double quote marks, remembering to add
+        # spaces before/after (double spaces removed later)
+        '“': ' "',
+        '”.': '". ',
+        '”,': '", ',
+        '”;': '"; ',
+        '”': '" ',
+        # If there's a comma/period followed by a double quote,
+        # then insert a space (double spaces removed later)
+        '."': '." ',
+        ',"': '," ',
+        ';"': ';" ',
+        # Remove asterisks
+        '*': None,
+        # Fix "percent"
+        "per cent": "percent",
+        # Remove (TM), (R), (c)
+        '(TM)': None,
+        '(tm)': None,
+        '™': None,
+        '(R)': None,
+        '(r)': None,
+        '®': None,
+        '(C)': None,
+        '(c)': None,
+        '©': None,
+        # Fix ellipses
+        '…': '...',
+        # Normalize newlines
+        '\r': None,
+    })
+
+    # Normalize spacing
+    text = text.replace("  ", " ")
+    text = text.strip()
+
+    # Remove 4 byte characters
+    return re_pattern_utf8_fix.sub(u'\uFFFD', text)
 
 
 def normalize_immediately_after_download(text: str) -> str:
-    # Remove newlines in XML, as well as bad space characters
-    # if text.startswith("<"):
-    #     text = re.sub(r"[\xa0\n]]", " ", text)
-    #
-    # # If not HTML, just remove the bad space characters
-    # else:
-    text = text.replace(u'\xa0', u' ')
-    text = text.replace(u'\xad', u'-')
+    # Remove the bad space characters
+    text = text.translate({
+        u'\xa0': None,
+        u'\xad': '-'
+    })
 
     # Remove other bad characters
     text = re.sub(r"[\x00-\x08\x0b\x0e-\x1f\x7f]", "", text)
@@ -162,9 +138,9 @@ def normalize_immediately_after_download(text: str) -> str:
     return text
 
 
-def normalize_stripping_insignificant_text_lines(text: str,
-                                                 bad_needles: Optional[List[str]] = None
-                                                 ) -> str:
+def strip_insignificant_text_lines(text: str,
+                                   bad_needles: Optional[List[str]] = None
+                                   ) -> str:
     """
     Strip out short lines and lines with few letters.
     Optionally, also strip out short lines that contain one or more
@@ -195,7 +171,7 @@ def normalize_stripping_insignificant_text_lines(text: str,
 
         # Lines with too few words that contain bad terms, if needed
         words = line.split(' ')
-        if len(words) < 11 and bad_needles and multi_needle_search(line.lower(), bad_needles):
+        if len(words) < 11 and bad_needles and any(s in line.lower() for s in bad_needles):
             continue
 
         # Not a bad line - append it to the list
@@ -348,3 +324,38 @@ def uncapitalize_start_of_sentence(text):
     elif is_quote(text[0]) and text[1].isupper():
         return text[0] + text[1].lower() + text[2:]
     return text
+
+
+def experiments():
+    random_strings = [''.join(random.choices(string.ascii_uppercase + " -", k=20000)) for i in range(1000)]
+    # random_strings_as_lists = [list(s) for s in random_strings]
+    orig = ["a-", "ddd", "ca", "e", "f"]
+    repl = ["", "", "", "", ""]
+    repl_dict = {o: repl[i] for i, o in enumerate(orig)}
+    import time
+    now = time.time()
+    for i, o in enumerate(orig):
+        new_1 = [s.replace(o, repl[i]) for s in random_strings]
+    prev = now
+    now = time.time()
+    print("REPLA", now - prev)
+    new_2 = [s.translate(repl_dict) for s in random_strings]
+    prev = now
+    now = time.time()
+    print("TRANS", now - prev)
+    new_3 = [re.sub("|".join(orig), lambda m: repl_dict[m.group(0)], s) for s in random_strings]
+    prev = now
+    now = time.time()
+    print("RE", now - prev)
+    # new_4 = [re.sub(r"[c]", "?", s) for s in random_strings]
+    new_4 = [re.sub(r'(\w)-(\w)', r'\g<1>\g<2>', s) for s in random_strings]
+    prev = now
+    now = time.time()
+    print("RE_M", now - prev)
+    # rx = re.compile("c")
+    # new_5 = [re.sub(r"[c]", "?", s) for s in random_strings_as_lists for c in s]
+    # prev = now
+    # now = time.time()
+    # print("LIST", now - prev)
+    # print(new_1)
+    # print(new_2)
