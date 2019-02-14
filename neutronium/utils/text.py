@@ -218,11 +218,6 @@ def strip_problematic_sec_tags(html: str) -> str:
     return html
 
 
-def capitalize_first(text: str):
-    # NOTE: this even works if text is length 1
-    return text[0].upper() + text[1:]
-
-
 def is_capitalized_word_list(words):
     """
     Check if every word starts with a capital letter.
