@@ -75,7 +75,6 @@ def normalize_web_text(text: str) -> str:
 
     # Perform simple replacements
     text = text.translate({
-        ''
         # Add spaces before and after dashes
         '—': ' — ',
         # Standardize "hyphens with spaces"
