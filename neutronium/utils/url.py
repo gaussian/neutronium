@@ -3,6 +3,7 @@ from urllib.parse import urlparse, parse_qs, urljoin
 from django.conf import settings
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
+from typing import Tuple, Any, Sequence
 
 
 def strip_querystring_from_url(url):
@@ -220,11 +221,11 @@ def link2email(link):
     return link + "utm_source"
 
 
-def extract_dict_from_query_params(query_params, possible_param_definitions):
+def extract_dict_from_query_params(query_params, possible_param_definitions: Sequence[Tuple[str, type, Any]]):
     """
     Extracts and converts QueryDict into a correctly typed dict.
 
-    Expects possible_param_definitions to be a list of tuples of (param_name, param_type),
+    Expects possible_param_definitions to be a list of tuples of (param_name, param_type, param_default),
     e.g.
     [
         ('page', int),
@@ -236,10 +237,7 @@ def extract_dict_from_query_params(query_params, possible_param_definitions):
     :param possible_param_definitions:
     :return:
     """
-    output = dict()
-    for param_definition in possible_param_definitions:
-        param_name = param_definition[0]
-        param_type = param_definition[1]
+    def get_param_from_def(param_name, param_type, param_default):
         if param_type == list:
             param = query_params.getlist(param_name, None)
         else:
@@ -249,5 +247,9 @@ def extract_dict_from_query_params(query_params, possible_param_definitions):
                 param = int(param)
             elif param_type == bool:
                 param = param == "true"
-            output[param_name] = param
-    return output
+        else:
+            param = param_default
+        return param
+
+    return {pn: get_param_from_def(pn, pt, pd)
+            for pn, pt, pd in possible_param_definitions}
