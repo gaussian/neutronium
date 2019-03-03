@@ -47,6 +47,8 @@ def rchop(text, ending):
 
 # Regular expression pattern to remove UTF-8 greater than 3 bytes
 re_pattern_utf8_fix = re.compile(u'[^\u0000-\uD7FF\uE000-\uFFFF]', re.UNICODE)
+def remove_4_byte_unicode(text):
+    return re_pattern_utf8_fix.sub(u'\uFFFD', text)
 
 
 def normalize_web_text(text: str) -> str:
@@ -121,7 +123,7 @@ def normalize_web_text(text: str) -> str:
     text = text.strip()
 
     # Remove 4 byte characters
-    return re_pattern_utf8_fix.sub(u'\uFFFD', text)
+    return remove_4_byte_unicode(text)
 
 
 def normalize_immediately_after_download(text: str) -> str:
