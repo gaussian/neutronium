@@ -51,6 +51,75 @@ def remove_4_byte_unicode(text):
     return re_pattern_utf8_fix.sub(u'\uFFFD', text)
 
 
+char_replacement_dict = {
+    # Add spaces before and after dashes
+    '—': ' — ',
+    # Standardize "hyphens with spaces"
+    # ' - ': ' — ',
+    # Fix weird single quote marks
+    '‘': "'",
+    '’': "'",
+    '': "'",
+    '': "'",
+    # Fix directional double quote marks, remembering to add
+    # spaces before/after (double spaces removed later)
+    '“': ' "',
+    # '”.': '". ',
+    # '”,': '", ',
+    # '”;': '"; ',
+    '”': '" ',
+    # If there's a comma/period followed by a double quote,
+    # then insert a space (double spaces removed later)
+    # '."': '." ',
+    # ',"': '," ',
+    # ';"': ';" ',
+    # Remove asterisks
+    '*': None,
+    # Fix "percent"
+    # "per cent": "percent",
+    # Remove (TM), (R), (c)
+    # '(TM)': None,
+    # '(tm)': None,
+    '™': None,
+    # '(R)': None,
+    # '(r)': None,
+    '®': None,
+    # '(C)': None,
+    # '(c)': None,
+    '©': None,
+    # Fix ellipses
+    '…': '...',
+    # Normalize newlines
+    '\r': None,
+}
+string_replacement_dict = {
+    # Standardize "hyphens with spaces"
+    ' - ': ' — ',
+    # Fix directional double quote marks, remembering to add
+    # spaces before/after (double spaces removed later)
+    '”.': '". ',
+    '”,': '", ',
+    '”;': '"; ',
+    # If there's a comma/period followed by a double quote,
+    # then insert a space (double spaces removed later)
+    '."': '." ',
+    ',"': '," ',
+    ';"': ';" ',
+    # Fix "percent"
+    "per cent": "percent",
+    # Remove (TM), (R), (c)
+    '(TM)': "",
+    '(tm)': "",
+    '(R)': "",
+    '(r)': "",
+    '(C)': "",
+    '(c)': "",
+}
+ord_replacement_dict = {ord(k): v for k, v in char_replacement_dict.items()}
+def replace_single_chars(text):
+    return text.translate(ord_replacement_dict)
+
+
 def normalize_web_text(text: str) -> str:
     """
     Normalize text downloaded from the web. This does slightly more
@@ -76,51 +145,14 @@ def normalize_web_text(text: str) -> str:
     # text = re.sub(r'(\w)\.\.(\s)', '\g<1>.\g<2>', text)
 
     # Perform simple replacements
-    text = text.translate({
-        # Add spaces before and after dashes
-        '—': ' — ',
-        # Standardize "hyphens with spaces"
-        ' - ': ' — ',
-        # Fix weird single quote marks
-        '‘': "'",
-        '’': "'",
-        '': "'",
-        '': "'",
-        # Fix directional double quote marks, remembering to add
-        # spaces before/after (double spaces removed later)
-        '“': ' "',
-        '”.': '". ',
-        '”,': '", ',
-        '”;': '"; ',
-        '”': '" ',
-        # If there's a comma/period followed by a double quote,
-        # then insert a space (double spaces removed later)
-        '."': '." ',
-        ',"': '," ',
-        ';"': ';" ',
-        # Remove asterisks
-        '*': None,
-        # Fix "percent"
-        "per cent": "percent",
-        # Remove (TM), (R), (c)
-        '(TM)': None,
-        '(tm)': None,
-        '™': None,
-        '(R)': None,
-        '(r)': None,
-        '®': None,
-        '(C)': None,
-        '(c)': None,
-        '©': None,
-        # Fix ellipses
-        '…': '...',
-        # Normalize newlines
-        '\r': None,
-    })
+    text = replace_single_chars(text)
 
-    # Normalize spacing
+    # Perform complex replacements
+    for orig, repl in string_replacement_dict.items():
+        text = text.replace(orig, repl)
+
+    # Strip
     text = text.replace("  ", " ")
-    text = text.strip()
 
     # Remove 4 byte characters
     return remove_4_byte_unicode(text)
@@ -129,8 +161,8 @@ def normalize_web_text(text: str) -> str:
 def normalize_immediately_after_download(text: str) -> str:
     # Remove the bad space characters
     text = text.translate({
-        u'\xa0': None,
-        u'\xad': '-'
+        ord(u'\xa0'): None,
+        ord(u'\xad'): '-'
     })
 
     # Remove other bad characters
@@ -328,11 +360,15 @@ def uncapitalize_start_of_sentence(text):
 
 
 def experiments():
-    random_strings = [''.join(random.choices(string.ascii_uppercase + " -", k=20000)) for i in range(1000)]
+    """Conclusion - use text.translate() and text.replace()! """
+    random_strings = [''.join(random.choices(string.ascii_lowercase + " -", k=20000)) for i in range(1000)]
     # random_strings_as_lists = [list(s) for s in random_strings]
-    orig = ["a-", "ddd", "ca", "e", "f"]
-    repl = ["", "", "", "", ""]
+    replace_count = 1
+    orig = random.choices(string.ascii_uppercase, k=replace_count)
+    repl = random.choices(string.ascii_letters, k=replace_count)
+    repl_ord_dict = {ord(o): repl[i] for i, o in enumerate(orig)}
     repl_dict = {o: repl[i] for i, o in enumerate(orig)}
+    repl_func = make_multiple_replace_func(repl_dict)
     import time
     now = time.time()
     for i, o in enumerate(orig):
@@ -340,19 +376,25 @@ def experiments():
     prev = now
     now = time.time()
     print("REPLA", now - prev)
-    new_2 = [s.translate(repl_dict) for s in random_strings]
+    new_2 = [s.translate(repl_ord_dict) for s in random_strings]
     prev = now
     now = time.time()
     print("TRANS", now - prev)
-    new_3 = [re.sub("|".join(orig), lambda m: repl_dict[m.group(0)], s) for s in random_strings]
+    # new_3 = [re.sub("|".join(orig), lambda m: repl_dict[m.group(0)], s) for s in random_strings]
+    new_3 = [re.sub("|".join(orig), "x", s) for s in random_strings]
     prev = now
     now = time.time()
     print("RE", now - prev)
-    # new_4 = [re.sub(r"[c]", "?", s) for s in random_strings]
-    new_4 = [re.sub(r'(\w)-(\w)', r'\g<1>\g<2>', s) for s in random_strings]
+    # # new_4 = [re.sub(r"[c]", "?", s) for s in random_strings]
+    # new_4 = [re.sub(r'(\w)-(\w)', r'\g<1>\g<2>', s) for s in random_strings]
+    new_4 = [repl_func(s) for s in random_strings]
     prev = now
     now = time.time()
     print("RE_M", now - prev)
+    new_5 = [" ".join(p for p in s.split(" ") if p) for s in random_strings]
+    prev = now
+    now = time.time()
+    print("SPLIT", now - prev)
     # rx = re.compile("c")
     # new_5 = [re.sub(r"[c]", "?", s) for s in random_strings_as_lists for c in s]
     # prev = now
