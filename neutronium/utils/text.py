@@ -152,7 +152,7 @@ def normalize_web_text(text: str) -> str:
         text = text.replace(orig, repl)
 
     # Strip
-    text = text.replace("  ", " ")
+    text = text.strip()
 
     # Remove 4 byte characters
     return remove_4_byte_unicode(text)
