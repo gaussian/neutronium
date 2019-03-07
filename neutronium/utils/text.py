@@ -151,7 +151,8 @@ def normalize_web_text(text: str) -> str:
     for orig, repl in string_replacement_dict.items():
         text = text.replace(orig, repl)
 
-    # Strip
+    # Fix spacing
+    text = text.replace("  ", " ")
     text = text.strip()
 
     # Remove 4 byte characters
