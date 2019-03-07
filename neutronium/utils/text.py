@@ -54,8 +54,6 @@ def remove_4_byte_unicode(text):
 char_replacement_dict = {
     # Add spaces before and after dashes
     '—': ' — ',
-    # Standardize "hyphens with spaces"
-    # ' - ': ' — ',
     # Fix weird single quote marks
     '‘': "'",
     '’': "'",
@@ -68,11 +66,6 @@ char_replacement_dict = {
     # '”,': '", ',
     # '”;': '"; ',
     '”': '" ',
-    # If there's a comma/period followed by a double quote,
-    # then insert a space (double spaces removed later)
-    # '."': '." ',
-    # ',"': '," ',
-    # ';"': ';" ',
     # Remove asterisks
     '*': None,
     # Fix "percent"
@@ -81,11 +74,7 @@ char_replacement_dict = {
     # '(TM)': None,
     # '(tm)': None,
     '™': None,
-    # '(R)': None,
-    # '(r)': None,
     '®': None,
-    # '(C)': None,
-    # '(c)': None,
     '©': None,
     # Fix ellipses
     '…': '...',
@@ -97,9 +86,9 @@ string_replacement_dict = {
     ' - ': ' — ',
     # Fix directional double quote marks, remembering to add
     # spaces before/after (double spaces removed later)
-    '”.': '". ',
-    '”,': '", ',
-    '”;': '"; ',
+    # '”.': '". ',
+    # '”,': '", ',
+    # '”;': '"; ',
     # If there's a comma/period followed by a double quote,
     # then insert a space (double spaces removed later)
     '."': '." ',
@@ -153,6 +142,7 @@ def normalize_web_text(text: str) -> str:
 
     # Fix spacing
     text = text.replace("  ", " ")
+    text = text.replace(" \n", "\n")
     text = text.strip()
 
     # Remove 4 byte characters
