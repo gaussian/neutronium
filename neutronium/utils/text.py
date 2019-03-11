@@ -61,11 +61,13 @@ char_replacement_dict = {
     '': "'",
     # Fix directional double quote marks, remembering to add
     # spaces before/after (double spaces removed later)
-    '“': ' "',
+    # '“': ' "',
+    '“': '"',
     # '”.': '". ',
     # '”,': '", ',
     # '”;': '"; ',
-    '”': '" ',
+    # '”': '" ',
+    '”': '"',
     # Remove asterisks
     '*': None,
     # Fix "percent"
@@ -91,9 +93,9 @@ string_replacement_dict = {
     # '”;': '"; ',
     # If there's a comma/period followed by a double quote,
     # then insert a space (double spaces removed later)
-    '."': '." ',
-    ',"': '," ',
-    ';"': ';" ',
+    # '."': '." ',
+    # ',"': '," ',
+    # ';"': ';" ',
     # Fix "percent"
     "per cent": "percent",
     # Remove (TM), (R), (c)
@@ -109,7 +111,7 @@ def replace_single_chars(text):
     return text.translate(ord_replacement_dict)
 
 
-def normalize_web_text(text: str) -> str:
+def normalize_web_text(text: str, strip: bool = True) -> str:
     """
     Normalize text downloaded from the web. This does slightly more
     than normalizing text for NLP (e.g removes emojis).
@@ -119,8 +121,7 @@ def normalize_web_text(text: str) -> str:
     - Normalize for NLP (bunch of stuff)
     - Remove non UTF-8 characters (i.e. 4 byte characters like emojis)
     - Replace multi-spaces with single space
-    :param text: 
-    :return: 
+    :return:
     """
 
     if not text:
@@ -141,9 +142,10 @@ def normalize_web_text(text: str) -> str:
         text = text.replace(orig, repl)
 
     # Fix spacing
-    text = text.replace("  ", " ")
-    text = text.replace(" \n", "\n")
-    text = text.strip()
+    # text = text.replace("  ", " ")
+    # text = text.replace(" \n", "\n")
+    if strip:
+        text = text.strip()
 
     # Remove 4 byte characters
     return remove_4_byte_unicode(text)
