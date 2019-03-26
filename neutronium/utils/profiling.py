@@ -1,6 +1,6 @@
 
 import os
-
+import time
 import cProfile
 
 
@@ -15,7 +15,7 @@ def with_cprofile(func):
             return result
         finally:
             filename = os.path.expanduser(
-                os.path.join('~', func.__name__ + '.pstat')
+                os.path.join('~', func.__name__ + str(time.time()) + '.pstat')
             )
             profile.dump_stats(filename)
     return profiled_func
