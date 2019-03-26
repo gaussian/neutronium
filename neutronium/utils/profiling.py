@@ -1,4 +1,6 @@
 
+import os
+
 import cProfile
 
 
@@ -12,7 +14,10 @@ def with_cprofile(func):
             profile.disable()
             return result
         finally:
-            profile.print_stats()
+            filename = os.path.expanduser(
+                os.path.join('~', func.__name__ + '.pstat')
+            )
+            profile.dump_stats(filename)
     return profiled_func
 
 
