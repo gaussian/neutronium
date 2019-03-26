@@ -15,7 +15,7 @@ def with_cprofile(func):
             return result
         finally:
             filename = os.path.expanduser(
-                os.path.join('~', func.__name__ + str(time.time()) + '.pstat')
+                os.path.join('~', f"{func.__name__}-{time.time()}.pstat")
             )
             profile.dump_stats(filename)
     return profiled_func
