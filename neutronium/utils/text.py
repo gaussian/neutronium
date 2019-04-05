@@ -159,14 +159,34 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
     return remove_4_byte_unicode(text)
 
 
+unicode_space_replacement_dict = {
+    "\xa0": " ",
+    "\xad": "-",
+    "\u1680": "-",
+    "\u180e": None,
+    "\u2000": " ",
+    "\u2001": " ",
+    "\u2002": " ",
+    "\u2003": " ",
+    "\u2004": " ",
+    "\u2005": " ",
+    "\u2006": " ",
+    "\u2007": " ",
+    "\u2008": " ",
+    "\u2009": " ",
+    "\u200a": " ",
+    "\u200b": None,
+    "\u202f": " ",
+    "\u205f": " ",
+    "\u3000": " ",
+    "\ufeff": None,
+}
+ord_space_replacement_dict = {ord(k): v for k, v in unicode_space_replacement_dict.items()}
 def normalize_immediately_after_download(text: str) -> str:
-    # Remove the bad space characters
-    text = text.translate({
-        ord(u'\xa0'): None,
-        ord(u'\xad'): '-'
-    })
+    # Remove/fix the bad space characters
+    text = text.translate(ord_space_replacement_dict)
 
-    # Remove other bad characters
+    # Remove other bad (ASCII) characters
     text = re.sub(r"[\x00-\x08\x0b\x0e-\x1f\x7f]", "", text)
 
     return text
