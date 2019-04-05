@@ -54,6 +54,8 @@ def remove_4_byte_unicode(text):
 char_replacement_dict = {
     # Add spaces before and after dashes
     '—': ' — ',
+    # Fix weird hyphens
+    '‐': '-',
     # Fix weird single quote marks
     '‘': "'",
     '’': "'",
