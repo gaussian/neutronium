@@ -56,6 +56,12 @@ char_replacement_dict = {
     '—': ' — ',
     # Fix weird hyphens
     '‐': '-',
+    # Fix footnote numbers
+    '⁽': '(',
+    '⁾': ')',
+    '¹': '1',
+    # '²': '2',
+    '³': '3',
     # Fix weird single quote marks
     '‘': "'",
     '’': "'",
