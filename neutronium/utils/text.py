@@ -67,6 +67,7 @@ char_replacement_dict = {
     '’': "'",
     '': "'",
     '': "'",
+    '\x92': "'",
     # Fix directional double quote marks, remembering to add
     # spaces before/after (double spaces removed later)
     # '“': ' "',
