@@ -236,18 +236,6 @@ def strip_insignificant_text_lines(text: str,
     return "\n\n".join(lines_to_keep)
 
 
-def strip_problematic_sec_tags(html: str) -> str:
-    tags_to_remove = re.compile(r'('
-                                #r'style="[^>]*"|'
-                                r'<\s*font\s*.*?>|<\s*/font\s*>|'
-                                r'<\s*a\s*.*?>|<\s*/a\s*>|'
-                                r'<\s*b\s*.*?>|<\s*/b\s*>|'
-                                r'<\s*em\s*.*?>|<\s*/em\s*>|'
-                                r'<\s*i\s*.*?>|<\s*/i\s*>|'
-                                r'<\s*sup\s*.*?<\s*/sup\s*>'
-                                r')', flags=re.IGNORECASE)
-    html = re.sub(tags_to_remove, '', html)
-    return html
 END_CHARS = (".", ":", "?", "!", "\"", "”", "'", "’", "")
 CONSERVATIVE_END_CHARS = END_CHARS + (":",)
 CURRENCIES = ("$", "€", "¥", "£")
