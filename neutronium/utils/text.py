@@ -3,6 +3,7 @@ import difflib
 import random
 import re
 import string
+from collections import Counter
 from typing import List, Optional
 
 from inflection import singularize, pluralize
@@ -247,6 +248,183 @@ def strip_problematic_sec_tags(html: str) -> str:
                                 r')', flags=re.IGNORECASE)
     html = re.sub(tags_to_remove, '', html)
     return html
+END_CHARS = (".", ":", "?", "!", "\"", "”", "'", "’", "")
+CONSERVATIVE_END_CHARS = END_CHARS + (":",)
+CURRENCIES = ("$", "€", "¥", "£")
+def clean_multi_page_report(page_texts, remove_bad_lines=True):
+
+    # Break into lines
+    lines_by_page = [[l for l in p.split("\n")] for p in page_texts]
+
+    # First, remove bad lines if necessary
+    if remove_bad_lines:
+        for i, lines in enumerate(lines_by_page):
+            # Handle short lines
+            cleaned_lines = []
+            for line in lines:
+                if not line:
+                    continue
+                fraction_non_alpha = sum(not c.isalpha() for c in line) / len(line)
+                # Remove any line that is almost completely non alpha (e.g. number strings)
+                if fraction_non_alpha > 0.8:
+                    continue
+                # Remove super short lines
+                if len(line) <= 8:
+                    continue
+                # Remove short lines that end in number or % or start with currency
+                if len(line) <= 25 and (line[-1].isdigit() or line[-1] in ("%",) or line[0] in CURRENCIES):
+                    continue
+                # Remove short lines that are just parentheticals
+                if len(line) <= 25 and line[0] == "(" and line[-1] == ")":
+                    continue
+                # Remove moderately short lines with mostly non-characters
+                if len(line) <= 40 and fraction_non_alpha > 0.6:
+                    continue
+                # Check for short lines with mostly capitals - these could be section headers,
+                # so wrap in newlines just in case
+                if len(line) <= 80 and line[0].isupper() and (
+                        line[-1] not in END_CHARS or sum(c.isupper() for c in line) / len(line) >= 0.5):
+                    line = "\n" + line + "\n"
+                cleaned_lines.append(line)
+            lines_by_page[i] = cleaned_lines
+
+    # Create a list of repeated lines to remove, either:
+    # (1) Page headers/footers (occurring in the first/last lines of each page)
+    # (2) Very short repeated headers throughout the document
+    possible_header_line_indices = [0, 1, 2, -1, -2, -3]
+    non_empty_lines_by_page = [[l for l in p if l] for p in lines_by_page]
+    header_lines, short_repeating_lines = set(), set()
+    if remove_bad_lines:
+        # Page header/footer
+        possible_header_lines = [p[i] for p in non_empty_lines_by_page for i in possible_header_line_indices
+                                 if i < len(p) and -i <= len(p) and p[i]]
+        counter = Counter(possible_header_lines)
+        header_lines = set(l for l, cnt in counter.items()
+                           if (cnt >= 3 and len(l) >= 100)
+                           or (cnt >= 4 and len(l) < 100))
+        # Very short repeating liens
+        short_lines = [l for p in non_empty_lines_by_page for l in p if len(l) <= 50]
+        counter = Counter(short_lines)
+        short_repeating_lines = set(l for l, cnt in counter.items() if cnt >= 3)
+
+    # Check first couple pages to see if sentences have been split in the middle
+    sentences_need_merging = False
+    count_sentence_splits = 0
+    if len(non_empty_lines_by_page) >= 3:
+        start, end = 1, 3
+    else:
+        start, end = 0, 2
+    for lines in non_empty_lines_by_page[start:end]:
+        for i, line in enumerate(lines):
+            # Definitely a split sentence if ALL of these are true:
+            # (1) Line starts with lowercase
+            # (2) Previous line ends with a non-sentence-ending character
+            # (3) Previous line is long enough to be a full page width
+            # (4) Line contains a specific sentence end (i.e. ". ")
+            prev_line = lines[i - 1]
+            if i > 0 and line[0].islower() and prev_line[-1] not in CONSERVATIVE_END_CHARS and len(prev_line) > 60 \
+                    and (line[-1] == "." or ". " in line):
+                count_sentence_splits += 1
+                if count_sentence_splits >= 3:
+                    sentences_need_merging = True
+                    break
+        if sentences_need_merging:
+            break
+
+    # Look through each page
+    final_text = ""
+    prev_page_lines = None
+    for i, lines in enumerate(lines_by_page):
+        page_no = i + 1
+
+        # Skip empty pages
+        if not lines:
+            continue
+
+        # Skip pages that are almost entirely short headers/phrases
+        if len(lines) > 6 and sum(len(l) <= 80 for l in lines) / len(lines) >= 0.9:
+            continue
+
+        # Remove page headers/footers
+        if remove_bad_lines:
+            possible_page_numbers = [str(n) for n in range(page_no - 2, page_no + 3)]
+            for j in possible_header_line_indices:
+                # Not enough lines to check for the jth header
+                if j >= len(lines) or -j > len(lines):
+                    continue
+                line = lines[j]
+                # Remove numbers or lines that start/end with the page number
+                if len(line) < 40 and any(
+                        line.isdigit() or line.startswith(f"{n} ") or line.endswith(f" {n}" or f"{n} of " in line)
+                        for n in possible_page_numbers):
+                    del lines[j]
+                # Remove common headers/footers
+                elif line in header_lines:
+                    del lines[j]
+
+        # Remove short repeating lines (if necessary)
+        if remove_bad_lines:
+            repeated_lines_to_remove = set()
+            for j, line in enumerate(lines):
+                if len(line) <= 50 and line in short_repeating_lines:
+                    repeated_lines_to_remove.add(line)
+            if repeated_lines_to_remove:
+                lines = [l for l in lines if len(l) > 50 or not l in repeated_lines_to_remove]
+
+        # Remove start/end empty lines (i.e. where there were multiple newlines in the original text)
+        # good_lines = [l.strip() for l in lines if l]
+        # start, end = 0, len(lines)
+        # while start < end and not lines[start]:
+        #     start += 1
+        # while start < end and not lines[end - 1]:
+        #     end -= 1
+        # if start == end:
+        #     continue
+        # good_lines = [l.strip() for l in lines[start:end]]
+        good_lines = [l.strip() for l in lines if l]
+
+        # For the first page, merge consecutive lines at the top that are ALL CAPS
+        # NOTE: don't merge more than 10, that's a little crazy
+        if page_no == 1:
+            # Find first line that is NOT uppercase, i.e. the extent of the merge
+            line_index_after_all_caps = next((j for j, l in enumerate(good_lines) if not l.isupper() and j <= 10), 10)
+            if line_index_after_all_caps:
+                # Start from 2nd line (merge all into first line)
+                for j in range(1, line_index_after_all_caps):
+                    good_lines[0] += " " + good_lines[j]
+                for j in range(1, line_index_after_all_caps):
+                    del good_lines[j]
+
+        # Connect to previous page, depending on whether we think there was a pagebreak
+        # in the middle of a sentence
+        if prev_page_lines is not None:
+            prev_page_last_char = prev_page_lines[-1][-1]
+            # We are in middle of sentence if:
+            # (1) prev page didn't end with a page ending character AND
+            # (2) prev page wasn't a title page/cover page (i.e. prev page is first page and # lines is low)
+            if prev_page_last_char not in CONSERVATIVE_END_CHARS and (page_no >= 3 or len(prev_page_lines) > 5):
+                final_text += " "
+            else:
+                final_text += "\n\n"
+        prev_page_lines = good_lines
+
+        # Merge lines depending on whether sentences have been split
+        if sentences_need_merging:
+            lines_with_separators = [("" if i == 0 else
+                                      (" " if l and not l.isupper() and
+                                              # l[0].islower() and
+                                              good_lines[i - 1] and good_lines[i - 1][-1] not in END_CHARS and
+                                              len(good_lines[i - 1]) > 80 else "\n")
+                                      ) + l for i, l in enumerate(good_lines)]
+            page_text = "".join(lines_with_separators)
+        else:
+            # page_text = "\n".join(good_lines)
+            page_text = "\n".join(good_lines)
+
+        # Add the current page
+        final_text += page_text
+
+    return final_text
 
 
 def is_capitalized_word_list(words):
