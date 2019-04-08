@@ -222,10 +222,8 @@ def strip_insignificant_text_lines(text: str,
         if sum(c.isalpha() for c in line) < 5:
             continue
 
-        # [HACK] Strip bad chars here
-        line = line.strip().replace(u'\xa0', u' ')
-
         # Lines with too few words that contain bad terms, if needed
+        line = line.strip()
         words = line.split(' ')
         if len(words) < 11 and bad_needles and any(s in line.lower() for s in bad_needles):
             continue
