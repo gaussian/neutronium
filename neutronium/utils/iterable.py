@@ -76,12 +76,14 @@ def multi_needle_search(haystack: Collection, needles: Collection):
     return False
 
 
-def true_at_least(iterable, n):
+def many(iterable, n):
     """
     This function returns whether the iterable is True at least n times.
 
     It is similar to `any`, where `any` returns whether the iterable is
     True at least 1 time.
+
+    Source: https://stackoverflow.com/a/42514511
     """
     iterable = iter(iterable)
     return all(any(iterable) for _ in range(n))
