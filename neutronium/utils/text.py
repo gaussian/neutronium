@@ -327,7 +327,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
         if not lines:
             continue
 
-        # Skip pages that are almost entirely short headers/phrases
+        # Skip pages that are almost entirely lots of short headers/phrases
         if len(lines) > 6 and sum(len(l) <= 80 for l in lines) / len(lines) >= 0.9:
             continue
 
@@ -404,7 +404,6 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
                                       ) + l for i, l in enumerate(good_lines)]
             page_text = "".join(lines_with_separators)
         else:
-            # page_text = "\n".join(good_lines)
             page_text = "\n".join(good_lines)
 
         # Add the current page

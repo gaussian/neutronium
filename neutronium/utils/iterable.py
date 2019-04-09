@@ -68,11 +68,23 @@ def remove_objs_from_set(master_set, removal_objs):
     return master_set
 
 
+# TODO: deprecated, delete this
 def multi_needle_search(haystack: Collection, needles: Collection):
     for needle in needles:
         if needle in haystack:
             return True
     return False
+
+
+def true_at_least(iterable, n):
+    """
+    This function returns whether the iterable is True at least n times.
+
+    It is similar to `any`, where `any` returns whether the iterable is
+    True at least 1 time.
+    """
+    iterable = iter(iterable)
+    return all(any(iterable) for _ in range(n))
 
 
 def get_obj_properties_dict_from_config(obj, config_tuples):
