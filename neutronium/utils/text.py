@@ -239,8 +239,16 @@ CONSERVATIVE_END_CHARS = END_CHARS + (":",)
 CURRENCIES = ("$", "€", "¥", "£")
 def clean_multi_page_report(page_texts, remove_bad_lines=True):
 
+    # Debug
+    # from neutron.utils.performance import Performance
+    # perf = Performance()
+    # perf.print_time_since(level=3, pre_print="strt")
+
     # Break into lines
-    lines_by_page = [[l for l in p.split("\n")] for p in page_texts]
+    lines_by_page = [[l.strip() for l in p.split("\n")] for p in page_texts]
+
+    # Debug
+    # perf.print_time_since(level=3, pre_print="splt")
 
     # First, remove bad lines if necessary
     if remove_bad_lines:
@@ -250,7 +258,8 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
             for line in lines:
                 if not line:
                     continue
-                fraction_non_alpha = sum(not c.isalpha() for c in line) / len(line)
+                # fraction_non_alpha = sum(not c.isalpha() for c in line) / len(line)
+                fraction_non_alpha = 1 - (sum(map(str.isalpha, line)) / len(line))
                 # Remove any line that is almost completely non alpha (e.g. number strings)
                 if fraction_non_alpha > 0.8:
                     continue
@@ -268,11 +277,14 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
                     continue
                 # Check for short lines with mostly capitals - these could be section headers,
                 # so wrap in newlines just in case
-                if len(line) <= 80 and line[0].isupper() and (
-                        line[-1] not in END_CHARS or sum(c.isupper() for c in line) / len(line) >= 0.5):
-                    line = "\n" + line + "\n"
+                if len(line) <= 80 and line[0].isupper():
+                    if line[-1] not in END_CHARS or sum(map(str.isupper, line)) / len(line) >= 0.5:
+                        line = "\n" + line + "\n"
                 cleaned_lines.append(line)
             lines_by_page[i] = cleaned_lines
+
+    # Debug
+    # perf.print_time_since(level=3, pre_print="rmbd")
 
     # Create a list of repeated lines to remove, either:
     # (1) Page headers/footers (occurring in the first/last lines of each page)
@@ -292,6 +304,9 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
         short_lines = [l for p in non_empty_lines_by_page for l in p if len(l) <= 50]
         counter = Counter(short_lines)
         short_repeating_lines = set(l for l, cnt in counter.items() if cnt >= 3)
+
+    # Debug
+    # perf.print_time_since(level=3, pre_print="prel")
 
     # Check first couple pages to see if sentences have been split in the middle
     sentences_need_merging = False
@@ -317,18 +332,31 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
         if sentences_need_merging:
             break
 
+    # Debug
+    # perf.print_time_since(level=3, pre_print="nemg")
+
     # Look through each page
     final_text = ""
     prev_page_lines = None
     for i, lines in enumerate(lines_by_page):
         page_no = i + 1
+        skip = False
 
         # Skip empty pages
         if not lines:
-            continue
+            skip = True
 
         # Skip pages that are almost entirely lots of short headers/phrases
         if len(lines) > 6 and sum(len(l) <= 80 for l in lines) / len(lines) >= 0.9:
+            skip = True
+
+        # If skipping, add some padding space and reset the "previous page"
+        # so that we don't try to connect the first sentence of an upcoming
+        # page to the last sentence of a previous non-consecutive page!
+        if skip:
+            if final_text[-1] != "\n":
+                final_text += "\n"
+            prev_page_lines = None
             continue
 
         # Remove page headers/footers
@@ -366,8 +394,8 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
         #     end -= 1
         # if start == end:
         #     continue
-        # good_lines = [l.strip() for l in lines[start:end]]
-        good_lines = [l.strip() for l in lines if l]
+        # good_lines = [l for l in lines[start:end]]
+        good_lines = [l for l in lines if l]
 
         # For the first page, merge consecutive lines at the top that are ALL CAPS
         # NOTE: don't merge more than 10, that's a little crazy
@@ -384,11 +412,12 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
         # Connect to previous page, depending on whether we think there was a pagebreak
         # in the middle of a sentence
         if prev_page_lines is not None:
-            prev_page_last_char = prev_page_lines[-1][-1]
+            prev_page_last_char = prev_page_lines[-1][-1] if prev_page_lines else None
             # We are in middle of sentence if:
             # (1) prev page didn't end with a page ending character AND
             # (2) prev page wasn't a title page/cover page (i.e. prev page is first page and # lines is low)
-            if prev_page_last_char not in CONSERVATIVE_END_CHARS and (page_no >= 3 or len(prev_page_lines) > 5):
+            if prev_page_last_char and prev_page_last_char not in CONSERVATIVE_END_CHARS and \
+                    (page_no >= 3 or len(prev_page_lines) > 5):
                 final_text += " "
             else:
                 final_text += "\n\n"
@@ -408,6 +437,9 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
 
         # Add the current page
         final_text += page_text
+
+    # Debug
+    # perf.print_time_since(level=3, pre_print="done")
 
     return final_text
 
@@ -440,8 +472,8 @@ def is_quote(character):
 def ratio_newline_digit(text):
     """
     Get the fraction of this text's characters that are NEWLINE or DIGIT
-    :param text: 
-    :return: 
+    :param text:
+    :return:
     """
     num_newlines = num_digits = 0
     for char in text:
@@ -487,8 +519,8 @@ def word_count(thestring):
 def get_lang_if_not_english(url):
     """
     Get the language code, if looks like URL is not English (None otherwise)
-    :param url: 
-    :return: 
+    :param url:
+    :return:
     """
     non_english_codes = [
         'es', 'ja', 'zh', 'zh-CN', 'zh-HK', 'nl', 'pt', 'it', 'fr', 'de', 'ko'
