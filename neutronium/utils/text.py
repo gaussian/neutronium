@@ -55,6 +55,7 @@ def remove_4_byte_unicode(text):
 char_replacement_dict = {
     # Add spaces before and after dashes
     '—': ' — ',
+    '': ' — ',
     # Fix weird hyphens
     '‐': '-',
     # Fix footnote numbers
@@ -66,8 +67,6 @@ char_replacement_dict = {
     # Fix weird single quote marks
     '‘': "'",
     '’': "'",
-    '': "'",
-    '': "'",
     '\x92': "'",
     # Fix directional double quote marks, remembering to add
     # spaces before/after (double spaces removed later)
@@ -78,8 +77,10 @@ char_replacement_dict = {
     # '”;': '"; ',
     # '”': '" ',
     '”': '"',
+    '': '"',
+    '': '"',
     # Remove asterisks
-    '*': None,
+    # '*': None,
     # Fix "percent"
     # "per cent": "percent",
     # Remove (TM), (R), (c)
@@ -135,7 +136,7 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
     """
 
     if not text:
-        return ''
+        return ""
 
     # If there's a comma/period followed by a double quote, followed
     # by NO SPACE, then insert a space
@@ -162,8 +163,12 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
 
 
 unicode_space_replacement_dict = {
+    "\x95": "•",
     "\xa0": " ",
+    "\u00a0": " ",
     "\xad": "-",
+    "\u0096": "-",
+    "\u00ad": "-",
     "\u1680": "-",
     "\u180e": None,
     "\u2000": " ",
