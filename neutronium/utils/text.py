@@ -422,7 +422,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
             # (1) this page doesn't start with a bullet point
             # (2) prev page didn't end with a page ending character AND
             # (3) prev page wasn't a title page/cover page (i.e. prev page is first page and # lines is low)
-            if good_lines[0][0] == "•":
+            if good_lines and good_lines[0][0] == "•":
                 final_text += "\n"
             elif prev_page_last_char and prev_page_last_char not in CONSERVATIVE_END_CHARS and \
                     (page_no >= 3 or len(prev_page_lines) > 5):
