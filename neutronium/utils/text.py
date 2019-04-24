@@ -51,52 +51,11 @@ re_pattern_utf8_fix = re.compile(u'[^\u0000-\uD7FF\uE000-\uFFFF]', re.UNICODE)
 def remove_4_byte_unicode(text):
     return re_pattern_utf8_fix.sub(u'\uFFFD', text)
 
-
-char_replacement_dict = {
-    # Add spaces before and after dashes
-    '—': ' — ',
-    '': ' — ',
-    # Fix weird hyphens
-    '‐': '-',
-    # Fix footnote numbers
-    '⁽': '(',
-    '⁾': ')',
-    '¹': '1',
-    # '²': '2',
-    '³': '3',
-    # Fix weird single quote marks
-    '‘': "'",
-    '’': "'",
-    '\x92': "'",
-    # Fix directional double quote marks, remembering to add
-    # spaces before/after (double spaces removed later)
-    # '“': ' "',
-    '“': '"',
-    # '”.': '". ',
-    # '”,': '", ',
-    # '”;': '"; ',
-    # '”': '" ',
-    '”': '"',
-    '': '"',
-    '': '"',
-    # Remove asterisks
-    # '*': None,
-    # Fix "percent"
-    # "per cent": "percent",
-    # Remove (TM), (R), (c)
-    # '(TM)': None,
-    # '(tm)': None,
-    '™': None,
-    '®': None,
-    '©': None,
-    # Fix ellipses
-    '…': '...',
-    # Normalize newlines
-    '\r': None,
-}
-string_replacement_dict = {
+string_norm_dict = {
     # Standardize "hyphens with spaces"
     ' - ': ' — ',
+    # Add spaces before and after big dashes
+    "—": " — ",
     # Fix directional double quote marks, remembering to add
     # spaces before/after (double spaces removed later)
     # '”.': '". ',
@@ -117,16 +76,13 @@ string_replacement_dict = {
     '(C)': "",
     '(c)': "",
 }
-ord_replacement_dict = {ord(k): v for k, v in char_replacement_dict.items()}
-def replace_single_chars(text):
-    return text.translate(ord_replacement_dict)
 
 
 def normalize_web_text(text: str, strip: bool = True) -> str:
     """
     Normalize text downloaded from the web. This does slightly more
     than normalizing text for NLP (e.g removes emojis).
-    
+
     Actions:
     - Strip text
     - Normalize for NLP (bunch of stuff)
@@ -145,15 +101,12 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
     # Fix double periods
     # text = re.sub(r'(\w)\.\.(\s)', '\g<1>.\g<2>', text)
 
-    # Perform simple replacements
-    text = replace_single_chars(text)
-
     # Perform complex replacements
-    for orig, repl in string_replacement_dict.items():
+    for orig, repl in string_norm_dict.items():
         text = text.replace(orig, repl)
 
     # Fix spacing
-    # text = text.replace("  ", " ")
+    text = text.replace("  ", " ")
     # text = text.replace(" \n", "\n")
     if strip:
         text = text.strip()
@@ -162,13 +115,12 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
     return remove_4_byte_unicode(text)
 
 
-unicode_space_replacement_dict = {
+char_norm_dict = {
+    '\x92': "'",
     "\x95": "•",
-    "\xa0": " ",
-    "\u00a0": " ",
-    "\xad": "-",
+    "\u00a0": " ",      # \xa0
     "\u0096": "-",
-    "\u00ad": "-",
+    "\u00ad": "-",      # \xad
     "\u1680": "-",
     "\u180e": None,
     "\u2000": " ",
@@ -187,11 +139,35 @@ unicode_space_replacement_dict = {
     "\u205f": " ",
     "\u3000": " ",
     "\ufeff": None,
+    # Fix ellipses
+    '…': '...',
+    # Normalize newlines
+    '\r': None,
+    # Quotes
+    '“': '"',
+    '”': '"',
+    '': '"',
+    '': '"',
+    '‘': "'",
+    '’': "'",
+    # Dashes
+    "": "—",
+    '‐': '-',
+    # Footnotes
+    '⁽': '(',
+    '⁾': ')',
+    '¹': '1',
+    # '²': '2',
+    '³': '3',
+    # Remove TM, etc
+    '™': None,
+    '®': None,
+    '©': None,
 }
-ord_space_replacement_dict = {ord(k): v for k, v in unicode_space_replacement_dict.items()}
-def normalize_immediately_after_download(text: str) -> str:
-    # Remove/fix the bad space characters
-    text = text.translate(ord_space_replacement_dict)
+ord_char_norm_dict = {ord(k): v for k, v in char_norm_dict.items()}
+def normalize_chars(text: str) -> str:
+    # Normalize bad characters
+    text = text.translate(ord_char_norm_dict)
 
     # Remove other bad (ASCII) characters
     text = re.sub(r"[\x00-\x08\x0b\x0e-\x1f\x7f]", "", text)
@@ -239,10 +215,12 @@ def strip_insignificant_text_lines(text: str,
     return "\n\n".join(lines_to_keep)
 
 
-END_CHARS = (".", ":", "?", "!", "\"", "”", "'", "’", "")
+END_CHARS = (".", ":", "?", "!", "\"", "”", "'", "’", "", "}")
 CONSERVATIVE_END_CHARS = END_CHARS + (":",)
 CURRENCIES = ("$", "€", "¥", "£")
-def clean_multi_page_report(page_texts, remove_bad_lines=True):
+def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_sentence_pages=False, allowable_headers=None):
+    no_allowable_headers = not isinstance(allowable_headers, list)
+    allowable_headers = allowable_headers or []
 
     # Debug
     # from neutron.utils.performance import Performance
@@ -300,13 +278,15 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
     if remove_bad_lines:
         # Page header/footer
         possible_header_lines = [p[i] for p in non_empty_lines_by_page for i in possible_header_line_indices
-                                 if i < len(p) and -i <= len(p) and p[i]]
+                                 if i < len(p) and -i <= len(p) and p[i]
+                                 and (no_allowable_headers or p[i] not in allowable_headers)]
         counter = Counter(possible_header_lines)
         header_lines = set(l for l, cnt in counter.items()
                            if (cnt >= 3 and len(l) >= 100)
                            or (cnt >= 4 and len(l) < 100))
         # Very short repeating liens
-        short_lines = [l for p in non_empty_lines_by_page for l in p if len(l) <= 50]
+        short_lines = [l for p in non_empty_lines_by_page for l in p
+                       if len(l) <= 50 and (no_allowable_headers or l not in allowable_headers)]
         counter = Counter(short_lines)
         short_repeating_lines = set(l for l, cnt in counter.items() if cnt >= 3)
 
@@ -352,7 +332,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True):
             skip = True
 
         # Skip pages that are almost entirely lots of short headers/phrases
-        if len(lines) > 6 and sum(len(l) <= 80 for l in lines) / len(lines) >= 0.9:
+        if skip_short_sentence_pages and len(lines) > 6 and sum(len(l) <= 80 for l in lines) / len(lines) >= 0.9:
             skip = True
 
         # If skipping, add some padding space and reset the "previous page"
