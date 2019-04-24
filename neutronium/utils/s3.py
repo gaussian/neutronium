@@ -43,7 +43,7 @@ def upload_dir_to_s3(source_directory: str, s3_path: str, s3_bucket: str = None,
 
 
 def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = None, filename=None, content=None,
-                 compress=False):
+                 compress=False, verbose=False):
     """Some inspiration from https://gist.github.com/veselosky/9427faa38cee75cd8e27"""
 
     if not filename and not content:
@@ -95,4 +95,5 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
         else:
             response = s3.put_object(Body=content, **put_params)
 
-    print(f"Uploaded to S3, response: {response}")
+    if verbose:
+        print(f"Uploaded to S3, response: {response}")
