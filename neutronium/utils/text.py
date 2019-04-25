@@ -341,7 +341,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         # so that we don't try to connect the first sentence of an upcoming
         # page to the last sentence of a previous non-consecutive page!
         if skip:
-            if final_text[-1] != "\n":
+            if final_text and final_text[-1] != "\n":
                 final_text += "\n"
             prev_page_lines = None
             continue
