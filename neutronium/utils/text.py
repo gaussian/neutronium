@@ -106,7 +106,8 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
         text = text.replace(orig, repl)
 
     # Fix spacing
-    text = text.replace("  ", " ")
+    # text = text.replace("  ", " ")
+    text = re.sub(r"  +", " ",  text)
     # text = text.replace(" \n", "\n")
     if strip:
         text = text.strip()
