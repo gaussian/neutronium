@@ -94,6 +94,9 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
     if not text:
         return ""
 
+    # Normalize chars again to be safe
+    text = normalize_chars(text)
+
     # If there's a comma/period followed by a double quote, followed
     # by NO SPACE, then insert a space
     # text = re.sub(r'([.,])"([^\s])', r'\g<1>" \g<2>', text)
