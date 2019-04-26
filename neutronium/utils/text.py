@@ -401,17 +401,23 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         good_lines = [l for l in lines if l]
 
         # For the first page, merge consecutive lines at the top that are ALL CAPS
-        # NOTE: don't merge more than 10, that's a little crazy
+        # NOTE: don't merge more than 12, that's a little crazy
+        # NOTE 2: allow newlines in between
         if page_no == 1:
             # Find first line that is NOT uppercase, i.e. the extent of the merge
             line_index_after_all_caps = next((j for j, l in enumerate(good_lines)
-                                              if not (l.isupper() and l.isalnum()) and j <= 10), 10)
+                                              if (not l.isupper() or not "{" in l) and j <= 12), 12)
             if line_index_after_all_caps:
+                if line_index_after_all_caps > len(good_lines):
+                    line_index_after_all_caps = len(good_lines)
                 # Start from 2nd line (merge all into first line)
+                new_headline = good_lines[0]
                 for j in range(1, line_index_after_all_caps):
-                    good_lines[0] += " " + good_lines[j]
-                for j in range(1, line_index_after_all_caps):
-                    del good_lines[j]
+                    if not good_lines[j].isspace():
+                        new_headline += " " + good_lines[j]
+                # Fix spacing on the new headline
+                new_headline = new_headline.strip().replace("\n", " ")
+                good_lines = [new_headline] + good_lines[line_index_after_all_caps:]
 
         # Connect to previous page, depending on whether we think there was a pagebreak
         # in the middle of a sentence
