@@ -219,12 +219,16 @@ def strip_insignificant_text_lines(text: str,
     return "\n\n".join(lines_to_keep)
 
 
-END_CHARS = (".", ":", "?", "!", "\"", "”", "'", "’", "", "}")
+# NOTE: "{" and "}" are special characters, used for document tagging
+SPECIAL_CHARS = ("{", "}")
+END_CHARS = (".", ":", "?", "!", "\"", "”", "'", "’", "") + SPECIAL_CHARS
 CONSERVATIVE_END_CHARS = END_CHARS + (":",)
 CURRENCIES = ("$", "€", "¥", "£")
-def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_sentence_pages=False, allowable_headers=None):
+def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_sentence_pages=False, allowable_headers=None,
+                            remove_short_lines_with=None):
     no_allowable_headers = not isinstance(allowable_headers, list)
     allowable_headers = allowable_headers or []
+    remove_short_lines_with = remove_short_lines_with or []
 
     # Debug
     # from neutron.utils.performance import Performance
@@ -277,7 +281,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
     # (1) Page headers/footers (occurring in the first/last lines of each page)
     # (2) Very short repeated headers throughout the document
     header_footer_size = 3
-    possible_header_line_indices = range(-header_footer_size, header_footer_size - 1)
+    possible_header_line_indices = range(-header_footer_size, header_footer_size)
     non_empty_lines_by_page = [[l for l in p if l] for p in lines_by_page]
     header_lines, short_repeating_lines = set(), set()
     if remove_bad_lines:
@@ -354,10 +358,9 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         # perf = Performance()
         # perf.print_time_since(level=3, pre_print="!!!")
 
-        # Removals (1): Tag page headers/footers for removal
-        lines_to_remove = set()
+        # Removals (1): Remove page headers/footers
         if remove_bad_lines:
-            possible_page_numbers = [str(n) for n in range(page_no - 2, page_no + 3)]
+            possible_page_numbers = [str(n) for n in range(max(page_no - 4, 0), page_no + 5)]
             for j in possible_header_line_indices:
                 # Not enough lines to check for the jth header
                 if j >= len(lines) or -j > len(lines):
@@ -367,37 +370,31 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
                 if len(line) < 40 and any(
                         line.isdigit() or line.startswith(f"{n} ") or line.endswith(f" {n}" or f"{n} of " in line)
                         for n in possible_page_numbers):
-                    lines_to_remove.add(line)
+                    lines[j] = ""
                 # Remove common headers/footers
                 elif line in header_lines:
-                    lines_to_remove.add(line)
+                    lines[j] = ""
 
-        # Removals (2): Tag short repeating lines for removal
+        # Removals (2): Remove short repeating lines
         if remove_bad_lines:
             for j, line in enumerate(lines):
                 if len(line) <= 50 and line in short_repeating_lines:
-                    lines_to_remove.add(line)
+                    lines[j] = ""
 
-        # Removals (3): Actually remove those bad lines
-        if lines_to_remove:
-            line_index_possible_foot_start = len(lines) - header_footer_size
-            lines = [l for j, l in enumerate(lines)
-                     if (len(l) > 50 and header_footer_size <= j < line_index_possible_foot_start)      # this part is to save actually checking most lines
-                     or not l in lines_to_remove]
+        # Removals (3): Remove 1-2 word lines containing the provided strings
+        if remove_short_lines_with:
+            for j, line in enumerate(lines):
+                if len(line) > 15:
+                    continue
+                num_words = line.count(" ")
+                line_lower = line.lower()
+                if num_words <= 2 and any(s in line_lower for s in remove_short_lines_with):
+                    lines[j] = ""
 
         # Debug
         # perf.print_time_since(level=3, pre_print="///")
 
-        # Remove start/end empty lines (i.e. where there were multiple newlines in the original text)
-        # good_lines = [l.strip() for l in lines if l]
-        # start, end = 0, len(lines)
-        # while start < end and not lines[start]:
-        #     start += 1
-        # while start < end and not lines[end - 1]:
-        #     end -= 1
-        # if start == end:
-        #     continue
-        # good_lines = [l for l in lines[start:end]]
+        # Remove start/end empty lines (i.e. where there were multiple newlines in the original text)]
         good_lines = [l for l in lines if l]
 
         # For the first page, merge consecutive lines at the top that are ALL CAPS
@@ -424,11 +421,11 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         if prev_page_lines is not None:
             prev_page_last_char = prev_page_lines[-1][-1] if prev_page_lines else None
             # We are in middle of sentence if:
-            # (1) this page doesn't start with a bullet point
+            # (1) this page doesn't start with a bullet point or a special character
             # (2) prev page didn't end with a heading (i.e. didn't end with newline)
             # (2) prev page didn't end with a page ending character AND
             # (3) prev page wasn't a title page/cover page (i.e. prev page is first page and # lines is low)
-            if good_lines and good_lines[0][0] == "•":
+            if good_lines and good_lines[0][0] in ("•",) + SPECIAL_CHARS:
                 final_text += "\n"
             # NOTE: the below condition occurs when a page ends with a heading, to which
             #       we earlier added "\n" before and after
