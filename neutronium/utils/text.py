@@ -286,8 +286,10 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
     header_lines, short_repeating_lines = set(), set()
     if remove_bad_lines:
         # Page header/footer
+        # NOTE: must ensure that the header and footer do not overlap, so are only within
+        #       the top/bottom HALF
         possible_header_lines = [p[i] for p in non_empty_lines_by_page for i in possible_header_line_indices
-                                 if i < len(p) and -i <= len(p) and p[i]
+                                 if 2 * i < len(p) and -2 * i <= len(p) and p[i]
                                  and (no_allowable_headers or p[i] not in allowable_headers)]
         counter = Counter(possible_header_lines)
         header_lines = set(l for l, cnt in counter.items()
