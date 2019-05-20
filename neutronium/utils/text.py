@@ -405,7 +405,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         if page_no == 1:
             # Find first line that is NOT uppercase, i.e. the extent of the merge
             line_index_after_all_caps = next((j for j, l in enumerate(good_lines)
-                                              if (not l.isupper() or not "{" in l) and j <= 12), 12)
+                                              if (not l.isupper() or "{" in l) and j <= 12), 12)
             if line_index_after_all_caps:
                 if line_index_after_all_caps > len(good_lines):
                     line_index_after_all_caps = len(good_lines)
