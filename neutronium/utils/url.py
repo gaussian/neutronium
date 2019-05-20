@@ -246,7 +246,7 @@ def extract_dict_from_query_params(query_params, possible_param_definitions: Seq
             if param_type == int:
                 param = int(param)
             elif param_type == bool:
-                param = param == "true"
+                param = param.lower() == "true"
         else:
             param = param_default
         return param
