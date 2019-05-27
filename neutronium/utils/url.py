@@ -176,7 +176,7 @@ def remove_duplicate_urls(urls: Sequence[str]):
     """
 
     # Strip URLs
-    urls = set(u.strip() for u in urls)
+    urls = [u.strip() for u in urls]
 
     # Create a mapping of "lowercase stripped" URL to the original URL
     # NOTE: due to the way the dict comprehension works, the LAST VALUE encountered
