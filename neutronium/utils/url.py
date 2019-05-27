@@ -46,7 +46,8 @@ def get_url_path(url):
 def strip_url_protocol(url):
     url = url.replace("http://", "")
     url = url.replace("https://", "")
-    url = url.replace("://", "")
+    if url.startswith("//"):
+        url = url[2:]
     url = url.replace("www.", "")
     url = url.rstrip('/')
     return url
