@@ -147,7 +147,7 @@ def correct_relative_url(url: str, root_url: str) -> str:
     """
 
     # Protocol included - can return immediately
-    if url.startswith('//') or '://' in url:
+    if any(url.startswith(f) for f in ("https", "http", "//")):
         return url
 
     # Catch the "meow.com" example, where protocol (e.g. http) is missing
