@@ -46,6 +46,7 @@ def get_url_path(url):
 def strip_url_protocol(url):
     url = url.replace("http://", "")
     url = url.replace("https://", "")
+    url = url.replace("://", "")
     url = url.replace("www.", "")
     url = url.rstrip('/')
     return url
@@ -133,7 +134,7 @@ def get_stripped_urls(urls, strip_down_to_substring):
     return stripped_urls
 
 
-def correct_relative_url(url, root_url):
+def correct_relative_url(url: str, root_url: str) -> str:
     """
     Put into a canonical format, e.g. '/press' becomes 'http://hello.com/press'
 
@@ -145,7 +146,7 @@ def correct_relative_url(url, root_url):
     """
 
     # Protocol included - can return immediately
-    if url.startswith('//') or '//:' in url:
+    if url.startswith('//') or '://' in url:
         return url
 
     # Catch the "meow.com" example, where protocol (e.g. http) is missing
@@ -156,28 +157,30 @@ def correct_relative_url(url, root_url):
     return urljoin(root_url, url)
 
 
-def remove_duplicate_urls(urls):
+def get_similar_urls(url: str):
+    """
+    Get the set of URLs which should be considered duplicative of this URL.
+    """
+    stripped_url = strip_url_protocol(url)
+    return set(h + w + b + e for h in ["http://", "https://", "//", ""]
+               for w in ["www.", ""]
+               for b in [stripped_url, stripped_url.lower()]
+               for e in ["/", ""])
+
+
+def remove_duplicate_urls(urls: Sequence[str]):
     """
     Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates.
-    :param urls:
     :return:
     """
-    output_urls = set()
-    for url in urls:
-        if url.replace('http', 'https') in output_urls:
-            continue
-        if url.replace('https', 'http') in output_urls:
-            continue
-        if url.replace('www.', '') in output_urls:
-            continue
-        if url.replace('//', '//www.') in output_urls:
-            continue
-        if url.strip('/') in output_urls:
-            continue
-        if url + '/' in output_urls:
-            continue
-        output_urls.add(url)
-    return output_urls
+
+    # Create a mapping of "lowercase stripped" URL to the original URL
+    # NOTE: due to the way the dict comprehension works, the LAST VALUE encountered
+    #       for a key will be the one kept
+    urls_by_canonical = {strip_url_protocol(u).lower(): u for u in urls}
+
+    # The values of this mapping are unique by canonical URL
+    return urls_by_canonical.values()
 
 
 def correct_and_deduplicate_urls(urls, base_url):
@@ -237,6 +240,7 @@ def extract_dict_from_query_params(query_params, possible_param_definitions: Seq
     :param possible_param_definitions:
     :return:
     """
+
     def get_param_from_def(param_name, param_type, param_default):
         if param_type == list:
             param = query_params.getlist(param_name, None)
