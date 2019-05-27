@@ -175,6 +175,9 @@ def remove_duplicate_urls(urls: Sequence[str]):
     :return:
     """
 
+    # Strip URLs
+    urls = set(u.strip() for u in urls)
+
     # Create a mapping of "lowercase stripped" URL to the original URL
     # NOTE: due to the way the dict comprehension works, the LAST VALUE encountered
     #       for a key will be the one kept
@@ -196,9 +199,6 @@ def correct_and_deduplicate_urls(urls, base_url):
     # Correct the URLs
     if base_url:
         urls = set(correct_relative_url(u, base_url) for u in urls)
-
-    # Strip URLs
-    urls = set(u.strip() for u in urls)
 
     # Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates
     urls = remove_duplicate_urls(urls)
