@@ -194,7 +194,11 @@ def correct_and_deduplicate_urls(urls, base_url):
     """
 
     # Correct the URLs
-    urls = set([correct_relative_url(u, base_url) for u in urls])
+    if base_url:
+        urls = set(correct_relative_url(u, base_url) for u in urls)
+
+    # Strip URLs
+    urls = set(u.strip() for u in urls)
 
     # Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates
     urls = remove_duplicate_urls(urls)
