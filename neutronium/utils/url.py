@@ -162,10 +162,12 @@ def get_similar_urls(url: str):
     Get the set of URLs which should be considered duplicative of this URL.
     """
     stripped_url = strip_url_protocol(url)
-    return set(h + w + b + e for h in ["http://", "https://", "//", ""]
-               for w in ["www.", ""]
-               for b in [stripped_url, stripped_url.lower()]
-               for e in ["/", ""])
+    similar_urls = set(h + w + b + e for h in ["http://", "https://", "//", ""]
+                       for w in ["www.", ""]
+                       for b in [stripped_url, stripped_url.lower()]
+                       for e in ["/", ""])
+    similar_urls.add(url)
+    return similar_urls
 
 
 def remove_duplicate_urls(urls: Sequence[str]):
@@ -183,7 +185,7 @@ def remove_duplicate_urls(urls: Sequence[str]):
     urls_by_canonical = {strip_url_protocol(u).lower(): u for u in urls}
 
     # The values of this mapping are unique by canonical URL
-    return urls_by_canonical.values()
+    return list(urls_by_canonical.values())
 
 
 def correct_and_deduplicate_urls(urls, base_url):
