@@ -402,7 +402,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         # For the first page, merge consecutive lines at the top that are ALL CAPS
         # NOTE: don't merge more than 12, that's a little crazy
         # NOTE 2: allow newlines in between
-        if page_no == 1:
+        if page_no == 1 and good_lines:
             # Find first line that is NOT uppercase, i.e. the extent of the merge
             line_index_after_all_caps = next((j for j, l in enumerate(good_lines)
                                               if (not l.isupper() or "{" in l) and j <= 12), 12)
