@@ -47,7 +47,7 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
     """Some inspiration from https://gist.github.com/veselosky/9427faa38cee75cd8e27"""
 
     if not filename and not content:
-        raise ValueError("Need filename or content defined to upload to S3")
+        raise ValueError(f"Need filename or content defined to upload to S3, requested path is {s3_path}")
 
     s3 = boto3.client(
         's3',
