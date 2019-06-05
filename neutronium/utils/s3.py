@@ -118,12 +118,12 @@ def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, enco
     body_bytes = streaming_body.read() if streaming_body else None
 
     # Decompress if needed
-    if decompress:
+    if decompress and body_bytes:
         bytestream = BytesIO(body_bytes)
         body_bytes = GzipFile(None, 'rb', fileobj=bytestream).read()
 
     # Decode if needed
-    if encoding:
+    if encoding and body_bytes:
         body = body_bytes.decode(encoding)
     else:
         body = body_bytes
