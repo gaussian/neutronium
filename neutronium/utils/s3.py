@@ -46,9 +46,11 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
                  compress=False, verbose=False):
     """Some inspiration from https://gist.github.com/veselosky/9427faa38cee75cd8e27"""
 
+    # Validation
     if not filename and not content:
         raise ValueError(f"Need filename or content defined to upload to S3, requested path is {s3_path}")
 
+    # S3 client
     s3 = boto3.client(
         's3',
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
@@ -97,3 +99,33 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
 
     if verbose:
         print(f"Uploaded to S3, response: {response}")
+
+def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, encoding=None):
+
+    # S3 client
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+    )
+
+    # Download
+    response = s3.get_object(
+        Bucket=s3_bucket or settings.S3_BUCKET_INTERNAL_FILES,
+        Key=s3_path,
+    )
+    streaming_body = response.get("Body", None)
+    body_bytes = streaming_body.read() if streaming_body else None
+
+    # Decompress if needed
+    if decompress:
+        bytestream = BytesIO(body_bytes)
+        body_bytes = GzipFile(None, 'rb', fileobj=bytestream).read()
+
+    # Decode if needed
+    if encoding:
+        body = body_bytes.decode(encoding)
+    else:
+        body = body_bytes
+
+    return body
