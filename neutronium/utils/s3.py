@@ -4,6 +4,7 @@ from io import BytesIO
 from typing import Optional
 
 import boto3
+from botocore.exceptions import ClientError
 from django.conf import settings
 
 
@@ -110,12 +111,20 @@ def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, enco
     )
 
     # Download
-    response = s3.get_object(
-        Bucket=s3_bucket or settings.S3_BUCKET_INTERNAL_FILES,
-        Key=s3_path,
-    )
-    streaming_body = response.get("Body", None)
-    body_bytes = streaming_body.read() if streaming_body else None
+    try:
+        response = s3.get_object(
+            Bucket=s3_bucket or settings.S3_BUCKET_INTERNAL_FILES,
+            Key=s3_path,
+        )
+        streaming_body = response.get("Body", None)
+        body_bytes = streaming_body.read() if streaming_body else None
+
+    # No object found at this location
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            return None
+        else:
+            raise e
 
     # Decompress if needed
     if decompress and body_bytes:
