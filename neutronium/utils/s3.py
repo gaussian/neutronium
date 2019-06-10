@@ -101,6 +101,7 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
     if verbose:
         print(f"Uploaded to S3, response: {response}")
 
+
 def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, encoding=None):
 
     # S3 client
