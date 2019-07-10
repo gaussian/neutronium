@@ -53,7 +53,7 @@ def remove_4_byte_unicode(text):
 
 string_norm_dict = {
     # Standardize "hyphens with spaces"
-    ' - ': ' — ',
+    " - ": " — ",
     # Add spaces before and after big dashes
     "—": " — ",
     # Fix directional double quote marks, remembering to add
@@ -69,12 +69,15 @@ string_norm_dict = {
     # Fix "percent"
     "per cent": "percent",
     # Remove (TM), (R), (c)
-    '(TM)': "",
-    '(tm)': "",
-    '(R)': "",
-    '(r)': "",
-    '(C)': "",
-    '(c)': "",
+    "(TM)": "",
+    "(tm)": "",
+    "(R)": "",
+    "(r)": "",
+    "(C)": "",
+    "(c)": "",
+    # Fix bad parenthesis sentence ends (usually wikipedia)
+    # ".[": ". [",
+    # ".(": ". (",
 }
 
 
@@ -120,6 +123,7 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
 
 
 char_norm_dict = {
+    '\x80': "€",
     '\x92': "'",
     "\x95": "•",
     "\u00a0": " ",      # \xa0
