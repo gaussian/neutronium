@@ -1,9 +1,8 @@
 from urllib.parse import urlparse, parse_qs, urljoin
 
-from django.conf import settings
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-from typing import Tuple, Any, Sequence, Optional, List
+from typing import Tuple, Any, Optional, List, Iterable
 
 
 def strip_querystring_from_url(url):
@@ -170,7 +169,7 @@ def get_similar_urls(url: str):
     return similar_urls
 
 
-def remove_duplicate_urls(urls: Sequence[str]):
+def remove_duplicate_urls(urls: Iterable[str]):
     """
     Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates.
     :return:
@@ -188,7 +187,7 @@ def remove_duplicate_urls(urls: Sequence[str]):
     return list(urls_by_canonical.values())
 
 
-def correct_and_deduplicate_urls(urls: List[str], base_url: str, bad_patterns: Optional[List[str]] = None):
+def correct_and_deduplicate_urls(urls: Iterable[str], base_url: str, bad_patterns: Optional[List[str]] = None):
     """
     """
 
@@ -225,7 +224,7 @@ def link2email(link):
     return link + "utm_source"
 
 
-def extract_dict_from_query_params(query_params, possible_param_definitions: Sequence[Tuple[str, type, Any]]):
+def extract_dict_from_query_params(query_params, possible_param_definitions: Iterable[Tuple[str, type, Any]]):
     """
     Extracts and converts QueryDict into a correctly typed dict.
 
