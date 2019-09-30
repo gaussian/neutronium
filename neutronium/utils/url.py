@@ -3,7 +3,7 @@ from urllib.parse import urlparse, parse_qs, urljoin
 from django.conf import settings
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-from typing import Tuple, Any, Sequence
+from typing import Tuple, Any, Sequence, Optional, List
 
 
 def strip_querystring_from_url(url):
@@ -188,13 +188,8 @@ def remove_duplicate_urls(urls: Sequence[str]):
     return list(urls_by_canonical.values())
 
 
-def correct_and_deduplicate_urls(urls, base_url):
+def correct_and_deduplicate_urls(urls: List[str], base_url: str, bad_patterns: Optional[List[str]] = None):
     """
-
-    :param urls:
-    :type urls: set
-    :param base_url:
-    :return:
     """
 
     # Correct the URLs
@@ -209,7 +204,7 @@ def correct_and_deduplicate_urls(urls, base_url):
 
     # Remove feeds with bad patterns
     filtered_feed_urls = set()
-    bad_patterns = settings.BAD_FEED_URL_PATTERNS
+    bad_patterns = bad_patterns or []
     for url in urls:
         u = url.lower()
         found_bad_pattern = False
