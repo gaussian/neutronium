@@ -103,10 +103,9 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
 
 
 def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, encoding=None):
-
     # S3 client
     s3 = boto3.client(
-        's3',
+        "s3",
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
     )
@@ -139,3 +138,32 @@ def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, enco
         body = body_bytes
 
     return body
+
+
+def clear_s3_dir_safe(s3_bucket: str, s3_dir: str):
+    delete_limit = 10
+
+    # S3 resource
+    s3 = boto3.resource(
+        "s3",
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+    )
+
+    # Bucket
+    bucket = s3.Bucket(s3_bucket)
+
+    # Count objects to make sure we are not trying to delete too many
+    count = 0
+    for _ in bucket.objects.filter(Prefix=f"{s3_dir}/"):
+        count += 1
+        if count >= delete_limit:
+            raise ValueError(f"Too many objects to delete in {s3_bucket}/{s3_dir}, will not execute")
+
+    # Delete all S3 objects in this "directory"
+    count = 0
+    for obj in bucket.objects.filter(Prefix=f"{s3_dir}/"):
+        s3.Object(bucket.name, obj.key).delete()
+        count += 1
+
+    print(f"Deleted {count} objects in {s3_bucket}/{s3_dir}")
