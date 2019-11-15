@@ -8,7 +8,8 @@ from typing import Tuple, Any, Optional, List, Iterable
 def strip_querystring_from_url(url):
     try:
         o = urlparse(url)
-        return f'{o.scheme}://{o.netloc}{o.path}'
+        scheme_prefix = f"{o.scheme}://" if o.scheme else "//"
+        return f"{scheme_prefix}{o.netloc}{o.path}"
     except ValueError:
         print("Bad URL: " + url)
         return None
@@ -17,7 +18,7 @@ def strip_querystring_from_url(url):
 def get_url_root(url):
     try:
         o = urlparse(url)
-        return f'{o.scheme}://{o.netloc}'
+        return f"{o.scheme}://{o.netloc}"
     except ValueError:
         print("Bad URL: " + url)
         return None
@@ -27,7 +28,7 @@ def get_url_domain(url):
     try:
         if "//" not in url:
             url = f"http://{url}"
-        return f'{urlparse(url).netloc}'
+        return f"{urlparse(url).netloc}"
     except ValueError:
         print(f"Bad URL: {url}")
         return None
@@ -42,21 +43,23 @@ def get_url_path(url):
         return None
 
 
-def strip_url_protocol(url):
+def canonize_url(url, lower=False):
     # NOTE: order matters
     for start in ["http://", "https://", "//", "www."]:
         if url.startswith(start):
             url = url[len(start):]
-    url = url.rstrip('/')
+    url = url.rstrip("/?").replace("/?", "?")
+    if lower:
+        url = url.lower()
     return url
 
 
 def pretty_url(url):
     o = urlparse(url)
     new_url = str(o.netloc).replace("www.", "")
-    url_split_by_periods = new_url.split('.')
-    if len(url_split_by_periods) > 2 and url_split_by_periods[-1] in ['com', 'edu', 'org']:
-        new_url = '.'.join(url_split_by_periods[1:])
+    url_split_by_periods = new_url.split(".")
+    if len(url_split_by_periods) > 2 and url_split_by_periods[-1] in ["com", "edu", "org"]:
+        new_url = ".".join(url_split_by_periods[1:])
     return new_url
 
 
@@ -74,11 +77,11 @@ def lower_url(url):
     parsed_url = urlparse(url)
     new_url = str(parsed_url.scheme).lower() + "://" + str(parsed_url.netloc).lower() + str(parsed_url.path).lower()
     if parsed_url.params:
-        new_url += ';' + str(parsed_url.params)
+        new_url += ";" + str(parsed_url.params)
     if parsed_url.query:
-        new_url += '?' + str(parsed_url.query)
+        new_url += "?" + str(parsed_url.query)
     if parsed_url.fragment:
-        new_url += '#' + str(parsed_url.fragment)
+        new_url += "#" + str(parsed_url.fragment)
     return new_url
 
 
@@ -149,8 +152,8 @@ def correct_relative_url(url: str, root_url: str) -> str:
         return url
 
     # Catch the "meow.com" example, where protocol (e.g. http) is missing
-    if strip_url_protocol(root_url) in url and '//' not in url:
-        url = 'http://' + url
+    if canonize_url(root_url) in url and "//" not in url:
+        url = "http://" + url
 
     # Join onto the root
     return urljoin(root_url, url)
@@ -160,7 +163,7 @@ def get_similar_urls(url: str):
     """
     Get the set of URLs which should be considered duplicative of this URL.
     """
-    stripped_url = strip_url_protocol(url)
+    stripped_url = canonize_url(url)
     similar_urls = set(h + w + b + e for h in ["http://", "https://", "//", ""]
                        for w in ["www.", ""]
                        for b in [stripped_url, stripped_url.lower()]
@@ -169,7 +172,7 @@ def get_similar_urls(url: str):
     return similar_urls
 
 
-def remove_duplicate_urls(urls: Iterable[str]):
+def remove_duplicate_urls(urls: Iterable[str], ignore_querystring: bool = False):
     """
     Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates.
     :return:
@@ -181,7 +184,7 @@ def remove_duplicate_urls(urls: Iterable[str]):
     # Create a mapping of "lowercase stripped" URL to the original URL
     # NOTE: due to the way the dict comprehension works, the LAST VALUE encountered
     #       for a key will be the one kept
-    urls_by_canonical = {strip_url_protocol(u).lower(): u for u in urls}
+    urls_by_canonical = {canonize_url(u, lower=True): u for u in urls}
 
     # The values of this mapping are unique by canonical URL
     return list(urls_by_canonical.values())
