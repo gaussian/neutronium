@@ -14,7 +14,7 @@ def print_memory_usage(label=None):
 
     svm = psutil.virtual_memory()
     total, available, percent, used, free = svm.total / MEGA, svm.available / MEGA, svm.percent, svm.used / MEGA, svm.free / MEGA
-    proc = psutil.Process(os.getpid()).memory_info()[1] / MEGA
+    proc = psutil.Process(os.getpid()).memory_info().rss / MEGA
     message = f"process = {proc} total = {total} available = {available} used = {used} free = {free} " \
               f"percent = {percent}"
     if label:
