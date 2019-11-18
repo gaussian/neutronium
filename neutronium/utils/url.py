@@ -221,8 +221,8 @@ def correct_and_deduplicate_urls(urls: Iterable[str], base_url: str, bad_pattern
 
 
 def link2email(link):
-    if '?' not in link:
-        link += '?'
+    if "?" not in link:
+        link += "?"
 
     return link + "utm_source"
 
