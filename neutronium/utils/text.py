@@ -53,9 +53,9 @@ def remove_4_byte_unicode(text):
 
 string_norm_dict = {
     # Standardize "hyphens with spaces"
-    " - ": " — ",
-    # Add spaces before and after big dashes
     "—": " — ",
+    " - ": " — ",
+    "--": " — ",
     # Fix directional double quote marks, remembering to add
     # spaces before/after (double spaces removed later)
     # '”.': '". ',
@@ -71,6 +71,8 @@ string_norm_dict = {
     # Remove (TM), (R), (c)
     "(TM)": "",
     "(tm)": "",
+    "(SM)": "",
+    "(sm)": "",
     "(R)": "",
     "(r)": "",
     "(C)": "",
@@ -169,6 +171,7 @@ char_norm_dict = {
     '³': '3',
     # Remove TM, etc
     '™': None,
+    '℠': None,
     '®': None,
     '©': None,
 }
