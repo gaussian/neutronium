@@ -60,6 +60,7 @@ def pretty_url(url):
     url_split_by_periods = new_url.split(".")
     if len(url_split_by_periods) > 2 and url_split_by_periods[-1] in ["com", "edu", "org"]:
         new_url = ".".join(url_split_by_periods[1:])
+    new_url = new_url.split(":")[0]
     return new_url
 
 
