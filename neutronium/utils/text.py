@@ -578,6 +578,16 @@ def get_lang_if_not_english(url):
     return None
 
 
+def simple_singularize(word):
+    if word.endswith("ies"):
+        return word[:-3] + "y"
+    if word.endswith("ss"):
+        return word
+    if word.endswith("s"):
+        return word[:-1]
+    return word
+
+
 # NOTE: this is simpler whan using morphy...
 def build_rough_set_with_plurals_and_singulars(words):
 
