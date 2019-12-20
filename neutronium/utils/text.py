@@ -493,6 +493,26 @@ def is_quote(character):
     return False
 
 
+def is_cjk(char):
+    return "\uac00" <= char <= "\ud7a3" or \
+           "\u3040" <= char <= "\u30ff" or \
+           "\u4e00" <= char <= "\u9FFF"
+
+
+def cjk_detect(text):
+    # FROM: https://medium.com/the-artificial-impostor/detecting-chinese-characters-in-unicode-strings-4ac839ba313a
+    # Korean
+    if re.search("[\uac00-\ud7a3]", text):
+        return "ko"
+    # Japanese
+    if re.search("[\u3040-\u30ff]", text):
+        return "ja"
+    # Chinese
+    if re.search("[\u4e00-\u9FFF]", text):
+        return "zh"
+    return None
+
+
 def ratio_newline_digit(text):
     """
     Get the fraction of this text's characters that are NEWLINE or DIGIT
