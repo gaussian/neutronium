@@ -488,8 +488,8 @@ def is_capitalized_phrase(phrase):
     return is_capitalized_word_list(phrase.split(' '))
 
 
-def is_quote(character):
-    if character == '\'' or character == '"' or character == '’' or character == '”' or character == '“':
+def is_quote(char):
+    if char == '\'' or char == '"' or char == '’' or char == '”' or char == '“':
         return True
     return False
 
@@ -522,7 +522,7 @@ def ratio_newline_digit(text):
     """
     num_newlines = num_digits = 0
     for char in text:
-        if char == '\n':
+        if char == "\n":
             num_newlines += 1
         if char.isdigit():
             num_digits += 1
@@ -535,7 +535,7 @@ def sentence_similarity(one, two):
 
 def camel_case_split(identifier):
     """From https://stackoverflow.com/a/29920015"""
-    matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
+    matches = re.finditer(".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", identifier)
     return [m.group(0) for m in matches]
 
 
@@ -550,7 +550,7 @@ def split_iter_para_bracket(text):
 def split_iter_line_with_min(text, min_length):
     start = 0
     while start < len(text):
-        end = text.find('\n', start + min_length) + 1       # returns -1 if not found, so end + 1 == 0
+        end = text.find("\n", start + min_length) + 1       # returns -1 if not found, so end + 1 == 0
         if end == 0:
             end = len(text)
         yield text[start:end]
@@ -568,12 +568,12 @@ def get_lang_if_not_english(url):
     :return:
     """
     non_english_codes = [
-        'es', 'ja', 'zh', 'zh-CN', 'zh-HK', 'nl', 'pt', 'it', 'fr', 'de', 'ko'
+        "es", "ja", "zh", "zh-CN", "zh-HK", "nl", "pt", "it", "fr", "de", "ko"
     ]
 
     # Search URL for the codwes
     for code in non_english_codes:
-        if '/' + code + '/' in url:
+        if "/" + code + "/" in url:
             return code
     return None
 
