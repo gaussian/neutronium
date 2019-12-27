@@ -579,12 +579,16 @@ def get_lang_if_not_english(url):
 
 
 def simple_singularize(word):
+    # "Parties"
     if word.endswith("ies"):
         return word[:-3] + "y"
-    if word.endswith("ss"):
-        return word
-    if word.endswith("s"):
+    if word[-1] == "s":
+        # "Princess", "analysis"
+        if word[-2] in ("s", "i", "c", "'"):
+            return word
+        # Simple plurals e.g. "cars"
         return word[:-1]
+    # No s
     return word
 
 
