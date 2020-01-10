@@ -162,8 +162,8 @@ char_norm_dict = {
     '’': "'",
     # Dashes
     "": "—",
-    '‐': '-',
     '–': '-',
+    '‐': '-',
     # Footnotes
     '⁽': '(',
     '⁾': ')',
@@ -229,11 +229,16 @@ def strip_insignificant_text_lines(text: str,
 
 # NOTE: "{" and "}" are special characters, used for document tagging
 SPECIAL_CHARS = ("{", "}")
-END_CHARS = (".", ":", "?", "!", "\"", "”", "'", "’", "") + SPECIAL_CHARS
+QUOTE_CHARS = ("\"", "”", "'", "’", "")
+NORMAL_END_CHARS = (".", ":", ";", "?", "!")
+END_CHARS = NORMAL_END_CHARS + SPECIAL_CHARS + QUOTE_CHARS
 CONSERVATIVE_END_CHARS = END_CHARS + (":",)
 CURRENCIES = ("$", "€", "¥", "£")
-def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_sentence_pages=False, allowable_headers=None,
-                            remove_short_lines_with=None):
+def clean_multi_page_report(page_texts: List[str],
+                            remove_bad_lines: bool = True,
+                            skip_short_sentence_pages: bool = False,
+                            allowable_headers: bool = None,
+                            remove_short_lines_with: Optional[List[str]] = None):
     no_allowable_headers = not isinstance(allowable_headers, list)
     allowable_headers = allowable_headers or []
     remove_short_lines_with = remove_short_lines_with or []
@@ -244,17 +249,23 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
     # perf.print_time_since(level=3, pre_print="strt")
 
     # Break into lines
-    lines_by_page = [[l.strip() for l in p.split("\n")] for p in page_texts]
+    lines_by_page = [[ln.strip() for ln in p.split("\n")] for p in page_texts]
+
+    # First, check first couple pages to see if sentences have been split in the middle
+    max_line_length = max(len(ln) for lines in lines_by_page[:3] for ln in lines)
+    min_line_chars = min(max_line_length * 0.75, 80)
+    max_line_chars_header = min_line_chars * 0.75
 
     # Debug
     # perf.print_time_since(level=3, pre_print="splt")
 
-    # First, remove bad lines if necessary
+    # Then remove bad lines if necessary
     if remove_bad_lines:
         for i, lines in enumerate(lines_by_page):
+            page_no_strs = [str(pd + i) for pd in range(-1, 1) if 0 <= pd + i <= len(lines_by_page)]
             # Handle short lines
             cleaned_lines = []
-            for line in lines:
+            for j, line in enumerate(lines):
                 if not line:
                     continue
                 # fraction_non_alpha = sum(not c.isalpha() for c in line) / len(line)
@@ -271,14 +282,23 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
                 # Remove short lines that are just parentheticals
                 if len(line) <= 25 and line[0] == "(" and line[-1] == ")":
                     continue
-                # Remove moderately short lines with mostly non-characters
+                # Remove moderately short lines with mostly non-alpha characters
                 if len(line) <= 40 and fraction_non_alpha > 0.6:
                     continue
+                # Remove page numbers from lines at END of page that clearly end with the page number
+                # if j == len(lines) - 1 and (line[-1].isdigit() or line[-2].isdigit()):
+                #     for page_no_str in page_no_strs:
+                #         for page_no_str_ex in [f" {pn}", f" {pn}."]:
+                #             if line.endswith(page_no_str_ex):
+                #                 line = line[:-len(page_no_str_ex)]
                 # Check for short lines with mostly capitals - these could be section headers,
                 # so wrap in newlines just in case
-                if len(line) <= 80 and line[0].isupper():
-                    if line[-1] not in END_CHARS or sum(map(str.isupper, line)) / len(line) >= 0.5:
-                        line = "\n" + line + "\n"
+                if len(line) <= max_line_chars_header and \
+                        line[0].isupper() and \
+                        line[-1] not in (".", ",") and \
+                        (". " not in line or line[:4] in ("Item", "Sect", "Part")) and \
+                        (line[-1] not in END_CHARS or sum(map(str.isupper, line)) / len(line) >= 0.5):
+                    line = "\n" + line + "\n"
                 cleaned_lines.append(line)
             lines_by_page[i] = cleaned_lines
 
@@ -296,14 +316,17 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         # Page header/footer
         # NOTE: must ensure that the header and footer do not overlap, so are only within
         #       the top/bottom HALF
+        # NOTE: trim lines by a few chars if they are very long
         possible_header_lines = [p[i] for p in non_empty_lines_by_page for i in possible_header_line_indices
                                  if 2 * i < len(p) and -2 * i <= len(p) and p[i]
                                  and (no_allowable_headers or p[i] not in allowable_headers)]
         counter = Counter(possible_header_lines)
-        header_lines = set(l for l, cnt in counter.items()
-                           if (cnt >= 3 and len(l) >= 100)
-                           or (cnt >= 4 and len(l) < 100))
-        # Very short repeating liens
+        header_lines = set(ln for ln, cnt in counter.items()
+                           if ln and (
+                                   (cnt >= 3 and len(ln) >= 100) or
+                                   (cnt >= 4 and len(ln) < 100)
+                           ))
+        # Very short repeating lines
         short_lines = [l for p in non_empty_lines_by_page for l in p
                        if len(l) <= 50 and (no_allowable_headers or l not in allowable_headers)]
         counter = Counter(short_lines)
@@ -326,13 +349,15 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
             # (2) Previous line ends with a non-sentence-ending character
             # (3) Previous line is long enough to be a full page width
             # (4) Line contains a specific sentence end (i.e. ". ")
-            prev_line = lines[i - 1]
-            if i > 0 and line[0].islower() and prev_line[-1] not in CONSERVATIVE_END_CHARS and len(prev_line) > 60 \
-                    and (line[-1] == "." or ". " in line):
-                count_sentence_splits += 1
-                if count_sentence_splits >= 3:
-                    sentences_need_merging = True
-                    break
+            if i > 0 and line[0].islower():
+                prev_line = lines[i - 1]
+                if prev_line[-1] not in CONSERVATIVE_END_CHARS \
+                        and len(prev_line) > 60 \
+                        and (line[-1] == "." or ". " in line):
+                    count_sentence_splits += 1
+                    if count_sentence_splits >= 3:
+                        sentences_need_merging = True
+                        break
         if sentences_need_merging:
             break
 
@@ -377,6 +402,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
                     continue
                 line = lines[j]
                 # Remove numbers or lines that start/end with the page number
+                # NOTE: this is in addition to page number removal earlier
                 if len(line) < 40 and any(
                         line.isdigit() or line.startswith(f"{n} ") or line.endswith(f" {n}" or f"{n} of " in line)
                         for n in possible_page_numbers):
@@ -405,7 +431,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
         # perf.print_time_since(level=3, pre_print="///")
 
         # Remove start/end empty lines (i.e. where there were multiple newlines in the original text)]
-        good_lines = [l for l in lines if l]
+        good_lines = [ln for ln in lines if ln]
 
         # For the first page, merge consecutive lines at the top that are ALL CAPS
         # NOTE: don't merge more than 12, that's a little crazy
@@ -442,7 +468,7 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
             elif prev_page_last_char and prev_page_last_char == "\n":
                 final_text += "\n"
             elif prev_page_last_char and prev_page_last_char not in CONSERVATIVE_END_CHARS and \
-                    (page_no >= 3 or len(prev_page_lines) > 5):
+                    (page_no >= 3 or len(prev_page_lines) > 5) and not (good_lines and good_lines[0].isupper()):
                 final_text += " "
             else:
                 final_text += "\n\n"
@@ -450,12 +476,19 @@ def clean_multi_page_report(page_texts, remove_bad_lines=True, skip_short_senten
 
         # Merge lines depending on whether sentences have been split
         if sentences_need_merging:
-            lines_with_separators = [("" if i == 0 else
-                                      (" " if l and not l.isupper() and
-                                              # l[0].islower() and
-                                              good_lines[i - 1] and good_lines[i - 1][-1] not in END_CHARS and
-                                              len(good_lines[i - 1]) > 80 else "\n")
-                                      ) + l for i, l in enumerate(good_lines)]
+            lines_with_separators = [("" if k == 0 else
+                                      (" " if ln and not ln.isupper() and
+                                              # ln[0].islower() and
+                                              good_lines[k - 1] and
+                                              # Last chars not END_CHARS, unless QUOTE
+                                              good_lines[k - 1][-1] not in NORMAL_END_CHARS and
+                                              (good_lines[k - 1][-1] not in QUOTE_CHARS or
+                                               good_lines[k - 1][-2] not in NORMAL_END_CHARS) and
+                                              # Prev line long enough, checking for long words on following line
+                                              (len(good_lines[k - 1]) > min_line_chars or
+                                               len(good_lines[k - 1]) + ln[:30].find(" ") > min_line_chars + 6)
+                                       else "\n")
+                                      ) + ln for k, ln in enumerate(good_lines)]
             page_text = "".join(lines_with_separators)
         else:
             page_text = "\n".join(good_lines)
