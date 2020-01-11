@@ -1,33 +1,30 @@
 
 import types
 
-from typing import Collection
+from typing import Collection, Iterable
 
 
-def batch(iterable, batch_size):
-    assert isinstance(iterable, list)
+def batch(iterable: Iterable, batch_size):
+    if isinstance(iterable, list) or isinstance(iterable, str):
+        num_items = len(iterable)
+        for ndx in range(0, num_items, batch_size):
+            yield iterable[ndx:min(ndx + batch_size, num_items)]
+    elif isinstance(iterable, types.GeneratorType):
+        while True:
+            generated_batch = []
 
-    num_items = len(iterable)
-    for ndx in range(0, num_items, batch_size):
-        yield iterable[ndx:min(ndx + batch_size, num_items)]
+            # Build and yield an array of generated items
+            try:
+                for i in range(0, batch_size):
+                    generated_batch.append(next(iterable))
+                yield generated_batch
 
-
-def batch_from_generator(gen_obj, batch_size):
-    assert isinstance(gen_obj, types.GeneratorType)
-
-    while True:
-        generated_batch = []
-
-        # Build and yield an array of generated items
-        try:
-            for i in range(0, batch_size):
-                generated_batch.append(next(gen_obj))
-            yield generated_batch
-
-        # Yield what remains
-        except StopIteration:
-            yield generated_batch
-            return
+            # Yield what remains
+            except StopIteration:
+                yield generated_batch
+                return
+    else:
+        raise ValueError(f"Bad iterable type: {type(iterable)}, try `list` or `generator`")
 
 
 def dedup_objs_by_id(objs):
