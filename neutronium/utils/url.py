@@ -1,67 +1,164 @@
-from urllib.parse import urlparse, parse_qs, urljoin
+
+from urllib.parse import urlparse, parse_qs, urljoin, urlencode
+from typing import Tuple, Any, Optional, List, Iterable, Set
 
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-from typing import Tuple, Any, Optional, List, Iterable
+import tldextract
+
+BAD_QUERY_PARAMS = frozenset([
+    "gclid", "mkt_tok", "sid", "atrkid", "goal", "_hsenc", "_hsmi", "__hssc", "__hstc", "hsCtaTracking",
+    "cx", "ie", "cof", "siteurl", "zanpid", "origin", "refid", "refsrc", "time2", "sa", "ved", "sqi",
+    "elqTrackId", "redirect_uri", "redirect_url", "response_type", "_wcsid", "ss", "rt", "epik",
+    "cspchd", "elqaid", "_sm_byp", "from", "isappinstalled", "hl", "form", "setlang", "pc", "omwq",
+    "inf_contact_key", "pos",
+])
+
+BAD_QUERY_PARAM_STARTS = ["mr:", "mc_", "fb", "utm", "facet", "WT."]
+
+GOOD_QUERY_PARAMS = frozenset([
+    "id", "ContentId", "page", "p", "output",
+])
+
+GOOD_QUERY_PARAM_STARTS = ["date", "ref"]
 
 
-def strip_querystring_from_url(url):
+def strip_query_params(url: str,
+                       aggression: int,
+                       keep_fragment: bool = True,
+                       ) -> Optional[str]:
+    """
+    Strip query parameters from a URL.
+    :param url:
+    :param aggression: Between 0 and 2:
+        - 0 only removes bad query params.
+        - 1 keeps only good query params.
+        - 2 removes all query params from a URL.
+    :param keep_fragment:
+    :return:
+    """
+    assert 0 <= aggression <= 2
+
     try:
+        url = url.strip()
         o = urlparse(url)
         scheme_prefix = f"{o.scheme}://" if o.scheme else "//"
-        return f"{scheme_prefix}{o.netloc}{o.path}"
+        # Remove all query params
+        url_pre_qs = f"{scheme_prefix}{o.netloc}{o.path}"
+        if aggression == 2 or not o.query:
+            if keep_fragment:
+                return f"{url_pre_qs}#{o.fragment}"
+            return url_pre_qs
+        # Remove bad query params and rebuild URL
+        query_dict = parse_qs(o.query)
+        # (some bad querystring)
+        if not query_dict and o.query:
+            return url
+        # Aggression 0: remove only bad query params
+        if aggression == 0:
+            query_dict = {k: v for k, v in query_dict.items()
+                          if k not in BAD_QUERY_PARAMS and
+                          not any(k.startswith(bad_start) for bad_start in BAD_QUERY_PARAM_STARTS)}
+        # Aggression 1: remove all except good query params
+        else:
+            query_dict = {k: v for k, v in query_dict.items()
+                          if k in GOOD_QUERY_PARAMS or
+                          any(k.startswith(good_start) for good_start in GOOD_QUERY_PARAM_STARTS)}
+        url = f"{url_pre_qs}?{urlencode(query_dict, doseq=True)}"
+        if keep_fragment:
+            url = f"{url}#{o.fragment}"
+        return url
     except ValueError:
-        print("Bad URL: " + url)
+        print(f"Bad URL: {url}")
         return None
 
 
-def get_url_root(url):
+def get_url_root(url: str):
+    """
+    Strip URL down to the scheme/subdomain/domain, e.g. 'https://www.boeing.com'.
+
+    This is often used to get the root URL for later correcting of relative URLs.
+    """
+
     try:
         o = urlparse(url)
         return f"{o.scheme}://{o.netloc}"
     except ValueError:
-        print("Bad URL: " + url)
+        print(f"Bad URL: {url}")
         return None
 
 
 def get_url_domain(url):
-    try:
-        if "//" not in url:
-            url = f"http://{url}"
-        return f"{urlparse(url).netloc}"
-    except ValueError:
-        print(f"Bad URL: {url}")
+    """
+    Get domain, e.g. 'boeing.co.uk'.
+
+    This is often used to create a "pretty URL" and also as part of the
+    URL normalization process.
+    
+    Note that this works with emails too, e.g.:
+    'john@rex.google.com' => 'google.com'
+
+    """
+
+    subdomain, domain, suffix = tldextract.extract(url)
+    if not domain or not suffix:
         return None
+    return f"{domain}.{suffix}"
 
 
 def get_url_path(url):
     try:
         o = urlparse(url, allow_fragments=False)
-        return o.path
+        return o.path.strip()
     except ValueError:
         print(f"Bad URL: {url}")
         return None
 
 
-def canonize_url(url, lower=False):
-    # NOTE: order matters
+def canonize_url(url: str, root_url=None) -> str:
+    """
+    Put into a canonical (correct) format, removing clearly bad querystrings,
+    and correcting relative URLs (if a root URL is provided)
+
+    e.g. '/press?utm_source=123' becomes 'http://hello.com/press'
+    """
+
+    # Strip bad querystrings (aggression=0 means only bad ones are stripped)
+    url = strip_query_params(url, aggression=0, keep_fragment=True)
+
+    # Catch the "meow.com" example, where protocol (e.g. http) is missing but
+    # the URL is still not relative
+    if "//" not in url and get_url_domain(root_url) in url:
+        url = "http://" + url
+
+    # Join onto the root (note that the URL's domain will override the root URL's)
+    return urljoin(root_url, url)
+
+
+def normalize_url(url: str) -> str:
+    """
+    Normalize the URL, stripping scheme, www, bad querystrings, extra slashes.
+
+    This should be used for comparing URLs to each other, but is NOT safe to
+    use as actual URLs (for this, use `canonize_url()`), because we may damage
+    the URL in this process.
+    """
+
+    # First strip bad query params (aggression=0 means only bad ones are stripped)
+    url = strip_query_params(url, aggression=0)
+    
+    # Next, lowercase
+    url = url.lower()
+    
+    # Next, strip the URL starts
     for start in ["http://", "https://", "//", "www."]:
         if url.startswith(start):
             url = url[len(start):]
+            
+    # Finally, fix the trailing slashes
     url = url.rstrip("/?").replace("/?", "?")
-    if lower:
-        url = url.lower()
+
     return url
-
-
-def pretty_url(url):
-    o = urlparse(url)
-    new_url = str(o.netloc).replace("www.", "")
-    url_split_by_periods = new_url.split(".")
-    if len(url_split_by_periods) > 2 and url_split_by_periods[-1] in ["com", "edu", "org"]:
-        new_url = ".".join(url_split_by_periods[1:])
-    new_url = new_url.split(":")[0]
-    return new_url
 
 
 def get_param_from_url(url, param):
@@ -71,10 +168,11 @@ def get_param_from_url(url, param):
 
 def lower_url(url):
     """
-    Get lowercase of all parts of URL except querystring
+    Get lowercase of all parts of URL
     :param url:
     :return:
     """
+
     parsed_url = urlparse(url)
     new_url = str(parsed_url.scheme).lower() + "://" + str(parsed_url.netloc).lower() + str(parsed_url.path).lower()
     if parsed_url.params:
@@ -99,7 +197,7 @@ def is_url_valid(url):
 
 def could_url_be_article(url):
     o = urlparse(url)
-    path = o.path.strip('/')
+    path = o.path.strip("/")
 
     # Path and query shouldn't be too long
     if len(path) > 30 or len(o.query) > 30:
@@ -107,7 +205,7 @@ def could_url_be_article(url):
         return True
 
     # Shouldn't contain too many hyphens
-    num_hyphens = len(path.split('-')) - 1
+    num_hyphens = len(path.split("-")) - 1
     if num_hyphens > 3:
         # print(">> " + url)
         return True
@@ -137,77 +235,54 @@ def get_stripped_urls(urls, strip_down_to_substring):
     return stripped_urls
 
 
-def correct_relative_url(url: str, root_url: str) -> str:
-    """
-    Put into a canonical format, e.g. '/press' becomes 'http://hello.com/press'
-
-    :param url:
-    :type url: string
-    :param root_url:
-    :type root_url: string
-    :return:
-    """
-
-    # Protocol included - can return immediately
-    if any(url.startswith(f) for f in ("https", "http", "//")):
-        return url
-
-    # Catch the "meow.com" example, where protocol (e.g. http) is missing
-    if canonize_url(root_url) in url and "//" not in url:
-        url = "http://" + url
-
-    # Join onto the root
-    return urljoin(root_url, url)
-
-
 def get_similar_urls(url: str):
     """
     Get the set of URLs which should be considered duplicative of this URL.
     """
-    stripped_url = canonize_url(url)
-    similar_urls = set(h + w + b + e for h in ["http://", "https://", "//", ""]
+    norm_url = normalize_url(url)
+    similar_urls = set(h + w + norm_url + e for h in ["http://", "https://", "//", ""]
                        for w in ["www.", ""]
-                       for b in [stripped_url, stripped_url.lower()]
                        for e in ["/", ""])
     similar_urls.add(url)
     return similar_urls
 
 
-def remove_duplicate_urls(urls: Iterable[str], ignore_querystring: bool = False):
+def remove_same_norm_urls(urls: Iterable[str]):
     """
     Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates.
     :return:
     """
 
-    # Strip URLs
-    urls = [u.strip() for u in urls]
-
-    # Create a mapping of "lowercase stripped" URL to the original URL
+    # Create a mapping of "normalized" URL to the original URL
     # NOTE: due to the way the dict comprehension works, the LAST VALUE encountered
     #       for a key will be the one kept
-    urls_by_canonical = {canonize_url(u, lower=True): u for u in urls}
+    norm_to_url = {normalize_url(u): u for u in urls}
 
     # The values of this mapping are unique by canonical URL
-    return list(urls_by_canonical.values())
+    return list(norm_to_url.values())
 
 
-def correct_and_deduplicate_urls(urls: Iterable[str], base_url: str, bad_patterns: Optional[List[str]] = None):
+def canonize_and_deduplicate_urls(urls: Iterable[str],
+                                  root_url: str = None,
+                                  exclude_root: bool = False,
+                                  bad_patterns: Optional[Set[str]] = None):
     """
+    Fully canonize and deduplicate URLs, including correcting relative URLs.
     """
-
-    # Correct the URLs
-    if base_url:
-        urls = set(correct_relative_url(u, base_url) for u in urls)
 
     # Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates
-    urls = remove_duplicate_urls(urls)
+    urls = remove_same_norm_urls(urls)
 
-    # Remove base URL, if it pops up
-    urls = [u for u in urls if u != base_url]
+    # Canonize (correct) the URLs, including making relatives absolute
+    urls = set(canonize_url(u, root_url=root_url) for u in urls)
 
-    # Remove feeds with bad patterns
-    filtered_feed_urls = set()
-    bad_patterns = bad_patterns or []
+    # Remove root URL, if it pops up
+    if exclude_root:
+        urls = [u for u in urls if u != root_url]
+
+    # Remove URLs with bad patterns
+    filtered_urls = set()
+    bad_patterns = bad_patterns or {}
     for url in urls:
         u = url.lower()
         found_bad_pattern = False
@@ -216,9 +291,9 @@ def correct_and_deduplicate_urls(urls: Iterable[str], base_url: str, bad_pattern
                 found_bad_pattern = True
                 break
         if not found_bad_pattern:
-            filtered_feed_urls.add(url)
+            filtered_urls.add(url)
 
-    return filtered_feed_urls
+    return filtered_urls
 
 
 def link2email(link):
