@@ -158,6 +158,7 @@ char_norm_dict = {
     '”': '"',
     '': '"',
     '': '"',
+    '': "'",
     '‘': "'",
     '’': "'",
     # Dashes
@@ -170,6 +171,7 @@ char_norm_dict = {
     '¹': '1',
     # '²': '2',
     '³': '3',
+    '⁄': '/',
     # Remove TM, etc
     '™': None,
     '℠': None,
@@ -232,7 +234,7 @@ SPECIAL_CHARS = ("{", "}")
 QUOTE_CHARS = ("\"", "”", "'", "’", "")
 NORMAL_END_CHARS = (".", ":", ";", "?", "!")
 END_CHARS = NORMAL_END_CHARS + SPECIAL_CHARS + QUOTE_CHARS
-CONSERVATIVE_END_CHARS = END_CHARS + (":",)
+CONSERVATIVE_END_CHARS = END_CHARS + (":", "☐", "☒")
 CURRENCIES = ("$", "€", "¥", "£")
 def clean_multi_page_report(page_texts: List[str],
                             remove_bad_lines: bool = True,
@@ -277,7 +279,8 @@ def clean_multi_page_report(page_texts: List[str],
                 if len(line) <= 8 and not line[0] == "•":
                     continue
                 # Remove short lines that end in number or % or start with currency
-                if len(line) <= 25 and (line[-1].isdigit() or line[-1] in ("%",) or line[0] in CURRENCIES):
+                if len(line) <= 25 and (line[-1].isdigit() or line[-1] in ("%",) or line[0] in CURRENCIES) \
+                        and not line.startswith("Item "):
                     continue
                 # Remove short lines that are just parentheticals
                 if len(line) <= 25 and line[0] == "(" and line[-1] == ")":
@@ -299,6 +302,10 @@ def clean_multi_page_report(page_texts: List[str],
                         (". " not in line or line[:4] in ("Item", "Sect", "Part")) and \
                         (line[-1] not in END_CHARS or sum(map(str.isupper, line)) / len(line) >= 0.5):
                     line = "\n" + line + "\n"
+                # Fix bad checkboxes
+                # TODO: is this the right place
+                if line[-1] == "o" and line[-2].isspace():
+                    line = line[:-2]
                 cleaned_lines.append(line)
             lines_by_page[i] = cleaned_lines
 
