@@ -243,8 +243,11 @@ def get_similar_urls(url: str):
     """
     Get the set of URLs which should be considered duplicative of this URL.
     """
-    norm_url = normalize_url(url)
-    similar_urls = set(h + w + norm_url + e for h in ["http://", "https://", "//", ""]
+    normalized_url = normalize_url(url)
+    if not normalized_url:
+        return None
+
+    similar_urls = set(h + w + normalized_url + e for h in ["http://", "https://", "//", ""]
                        for w in ["www.", ""]
                        for e in ["/", ""])
     similar_urls.add(url)
