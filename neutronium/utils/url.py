@@ -80,11 +80,15 @@ def get_url_root(url: str):
     This is often used to get the root URL for later correcting of relative URLs.
     """
 
+    # Cannot call this function without a fully formed URL
     try:
         o = urlparse(url)
-        return f"{o.scheme}://{o.netloc}"
+        root_url = f"{o.scheme}://{o.netloc}"
+        if root_url.startswith(":"):
+            raise ValueError
+        return root_url
     except ValueError:
-        print(f"Bad URL: {url}")
+        print(f"Bad URL (or not fully formed): {url}")
         return None
 
 
@@ -294,7 +298,7 @@ def canonize_and_deduplicate_urls(urls: Iterable[str],
     if exclude_root:
         urls = [u for u in urls if u != root_url]
 
-    return set(urls)
+    return set(u for u in urls if u)
 
 
 def link2email(link):
