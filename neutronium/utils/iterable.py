@@ -1,7 +1,7 @@
 
 import types
 
-from typing import Collection, Iterable
+from typing import Collection, Iterable, List
 
 
 def batch(iterable: Iterable, batch_size):
@@ -25,6 +25,14 @@ def batch(iterable: Iterable, batch_size):
                 return
     else:
         raise ValueError(f"Bad iterable type: {type(iterable)}, try `list` or `generator`")
+
+
+def separate(iterables: Iterable, condition: types.FunctionType) -> (List, List):
+    """Split one iterable into 2 lists, based on whether a condition is met"""
+    good, bad = [], []
+    for it in iterables:
+        good.append(it) if condition(it) else bad.append(it)
+    return good, bad
 
 
 def dedup_objs_by_id(objs):
