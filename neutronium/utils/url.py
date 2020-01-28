@@ -134,7 +134,7 @@ def canonize_url(url: str, root_url=None) -> Optional[str]:
 
     # Catch the "meow.com" example, where protocol (e.g. http) is missing but
     # the URL is still not relative
-    if "//" not in url and get_url_domain(root_url) in url:
+    if "//" not in url and url[0] != "/" and get_url_domain(root_url) in url:
         url = "http://" + url
 
     # Join onto the root (note that the URL's domain will override the root URL's)
