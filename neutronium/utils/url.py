@@ -26,6 +26,7 @@ GOOD_QUERY_PARAM_STARTS = ["date", "ref"]
 def strip_query_params(url: str,
                        aggression: int,
                        keep_fragment: bool = True,
+                       make_prefix_lower: bool = False,
                        ) -> Optional[str]:
     """
     Strip query parameters from a URL.
@@ -35,6 +36,7 @@ def strip_query_params(url: str,
         - 1 keeps only good query params.
         - 2 removes all query params from a URL.
     :param keep_fragment:
+    :param make_prefix_lower:
     :return:
     """
     assert 0 <= aggression <= 2
@@ -42,11 +44,19 @@ def strip_query_params(url: str,
     try:
         url = url.strip()
         o = urlparse(url)
-        scheme_prefix = f"{o.scheme}://" if o.scheme else "//"
+        if o.scheme and o.netloc:
+            scheme_prefix = f"{o.scheme}://"
+        elif url.startswith("//"):
+            scheme_prefix = "//"
+        else:
+            scheme_prefix = ""
         # Remove all query params
-        url_pre_qs = f"{scheme_prefix}{o.netloc}{o.path}"
+        url_pre_qs = f"{scheme_prefix}{o.netloc}"
+        if make_prefix_lower:
+            url_pre_qs = url_pre_qs.lower()
+        url_pre_qs = f"{url_pre_qs}{o.path}"
         if aggression == 2 or not o.query:
-            if keep_fragment:
+            if keep_fragment and o.fragment:
                 return f"{url_pre_qs}#{o.fragment}"
             return url_pre_qs
         # Remove bad query params and rebuild URL
@@ -65,7 +75,7 @@ def strip_query_params(url: str,
                           if k in GOOD_QUERY_PARAMS or
                           any(k.startswith(good_start) for good_start in GOOD_QUERY_PARAM_STARTS)}
         url = f"{url_pre_qs}?{urlencode(query_dict, doseq=True)}"
-        if keep_fragment:
+        if keep_fragment and o.fragment:
             url = f"{url}#{o.fragment}"
         return url
     except ValueError:
@@ -83,7 +93,7 @@ def get_url_root(url: str):
     # Cannot call this function without a fully formed URL
     try:
         o = urlparse(url)
-        root_url = f"{o.scheme}://{o.netloc}"
+        root_url = f"{o.scheme.lower()}://{o.netloc.lower()}"
         if root_url.startswith(":"):
             raise ValueError
         return root_url
@@ -104,10 +114,13 @@ def get_url_domain(url):
 
     """
 
+    if not url:
+        return ""
+
     subdomain, domain, suffix = tldextract.extract(url)
     if not domain or not suffix:
         return None
-    return f"{domain}.{suffix}"
+    return f"{domain.lower()}.{suffix.lower()}"
 
 
 def get_url_path(url):
@@ -128,7 +141,7 @@ def canonize_url(url: str, root_url=None) -> Optional[str]:
     """
 
     # Strip bad querystrings (aggression=0 means only bad ones are stripped)
-    url = strip_query_params(url, aggression=0, keep_fragment=True)
+    url = strip_query_params(url, aggression=0, keep_fragment=True, make_prefix_lower=True)
     if not url:
         return None
 
