@@ -1,5 +1,5 @@
 
-from urllib.parse import urlparse, parse_qs, urljoin, urlencode
+from urllib.parse import urlparse, parse_qs, urljoin, urlencode, ParseResult
 from typing import Tuple, Any, Optional, List, Iterable, Set
 
 from django.core.validators import URLValidator
@@ -22,114 +22,190 @@ GOOD_QUERY_PARAMS = frozenset([
 
 GOOD_QUERY_PARAM_STARTS = ["date", "ref"]
 
+USE_CACHE = True
+CACHE_SIZE = 1000
 
-def strip_query_params(url: str,
-                       aggression: int,
-                       keep_fragment: bool = True,
-                       make_prefix_lower: bool = False,
-                       ) -> Optional[str]:
-    """
-    Strip query parameters from a URL.
-    :param url:
-    :param aggression: Between 0 and 2:
-        - 0 only removes bad query params.
-        - 1 keeps only good query params.
-        - 2 removes all query params from a URL.
-    :param keep_fragment:
-    :param make_prefix_lower:
-    :return:
-    """
-    assert 0 <= aggression <= 2
+normalized_url_cache = dict()
+canonized_url_cache = dict()
 
+
+def parse_url(url: str, correct_root: bool = True, **kwargs) -> Optional[ParseResult]:
+    """
+    Correct the URL then parse it (as urlparse is bad at handling relative URLs)
+    """
+
+    # (0) Support function for correcting and adding scheme
+    # NOTE: it is critical this happens BEFORE parse_url!
+    def prepend_protocol(u, prefix=""):
+        # HTTPS protocol...
+        if ":443" in u:
+            # Make sure ":443" occurs before the path, by checking number of slashes
+            # (number of slashes before the ":443" should be 2, remember to factor in the prefix)
+            if u.split(":443")[0].count("/") + prefix.count("/") == 2:
+                return f"https:{prefix}{u}".replace(":443", "")
+        # ...otherwise HTTP
+        return f"http:{prefix}{u}"
+
+    # (1) PREPARE URL
+    # Strip
+    url = url.strip()
+    # Make sure URL has a protocol (unless it doesn't appear to have a domain, in
+    # which case this is probably a relative URL
+    if url.startswith("//"):
+        # e.g. "//boeing.com"
+        url = prepend_protocol(url)
+    elif "//" not in url[:10]:
+        # Domain exists, e.g. "boeing.com"
+        if get_url_domain(url):
+            url = prepend_protocol(url, "//")
+        # Otherwise, no domain in the URL - must be a relative link, e.g. "/contact-us"
+        else:
+            pass
+
+    # (2) PARSE
     try:
-        url = url.strip()
-        o = urlparse(url)
-        if o.scheme and o.netloc:
-            scheme_prefix = f"{o.scheme}://"
-        elif url.startswith("//"):
-            scheme_prefix = "//"
-        else:
-            scheme_prefix = ""
-        # Remove all query params
-        url_pre_qs = f"{scheme_prefix}{o.netloc}"
-        if make_prefix_lower:
-            url_pre_qs = url_pre_qs.lower()
-        url_pre_qs = f"{url_pre_qs}{o.path}"
-        if aggression == 2 or not o.query:
-            if keep_fragment and o.fragment:
-                return f"{url_pre_qs}#{o.fragment}"
-            return url_pre_qs
-        # Remove bad query params and rebuild URL
-        query_dict = parse_qs(o.query)
-        # (some bad querystring)
-        if not query_dict and o.query:
-            return url
-        # Aggression 0: remove only bad query params
-        if aggression == 0:
-            query_dict = {k: v for k, v in query_dict.items()
-                          if k not in BAD_QUERY_PARAMS and
-                          not any(k.startswith(bad_start) for bad_start in BAD_QUERY_PARAM_STARTS)}
-        # Aggression 1: remove all except good query params
-        else:
-            query_dict = {k: v for k, v in query_dict.items()
-                          if k in GOOD_QUERY_PARAMS or
-                          any(k.startswith(good_start) for good_start in GOOD_QUERY_PARAM_STARTS)}
-        url = f"{url_pre_qs}?{urlencode(query_dict, doseq=True)}"
-        if keep_fragment and o.fragment:
-            url = f"{url}#{o.fragment}"
-        return url
+        url_obj = urlparse(url, **kwargs)
     except ValueError:
         print(f"Bad URL: {url}")
         return None
 
+    # (3) POST-PROCESS
+    if correct_root:
+        # Remove redundant ports
+        netloc = url_obj.netloc
+        if ((":80/" in netloc or netloc.endswith(":80")) and url_obj.scheme == "http") or \
+                ((":443/" in netloc or netloc.endswith(":443")) and url_obj.scheme == "https"):
+            netloc = netloc.partition(":")[0]
+        # Lowercase
+        netloc = netloc.lower()
+        # Update
+        url_obj = url_obj._replace(netloc=netloc)
 
-def get_url_root(url: str):
+    return url_obj
+
+
+def rebuild_url(url: str,
+                url_obj: ParseResult = None,
+                aggression: int = 0,
+                ) -> Optional[str]:
+    """
+    Rebuild a URL correctly, stripping query parameters if needed, and lowercasing the
+    scheme and hostname.
+    :param url: Original URL
+    :param url_obj: Pre-parsed URL object
+    :param aggression: How aggressively to remove querystring params/fragments? Between 0 and 3:
+        - 0 no removal.
+        - 1 only removes bad query params.
+        - 2 keeps only good query params, AND removes fragments.
+        - 3 removes all query params from a URL, AND removes fragments.
+    :return: new URL
+    """
+    assert 0 <= aggression <= 3
+
+    # (1) PREPARE
+    # Parse URL or use existing parsed object
+    o = url_obj or parse_url(url)
+    if not o or not url:
+        return None
+    # Try to build the scheme/domain
+    if o.scheme and o.netloc:
+        scheme_prefix = f"{o.scheme}://"
+    else:
+        scheme_prefix = ""
+    url_root = f"{scheme_prefix}{o.netloc}"
+    # Add the URL path
+    url_pre_qs = f"{url_root}{o.path}"
+    # Pre-calculate fragment string - only add fragment if:
+    # (a) aggression is low enough
+    # (b) a fragment exists
+    if aggression >= 2 or not o.fragment:
+        fragment_suffix = ""
+    else:
+        fragment_suffix = f"#{o.fragment}"
+
+    # (2) HANDLE WITHOUT REBUILDING QUERYSTRING
+    # == Aggression 3: remove whole querystring
+    if aggression == 3:
+        return url_pre_qs
+    # No querystring, exit early
+    if not o.query:
+        return f"{url_pre_qs}{fragment_suffix}"
+    # == Aggression 0: no querystring removal (and based on the above, we know we have a querystring)
+    if aggression == 0:
+        return f"{url_pre_qs}?{o.query}{fragment_suffix}"
+
+    # (3) STRIP AND REBUILD QUERYSTRING
+    query_dict = parse_qs(o.query, keep_blank_values=True)
+    # Bad querystring (o.query is definitely not null), so return original URL
+    if not query_dict:
+        return url.rstrip("/")
+    # == Aggression 1: remove only bad query params
+    if aggression == 1:
+        query_dict = {k: v for k, v in query_dict.items()
+                      if k not in BAD_QUERY_PARAMS and
+                      not any(k.startswith(bad_start) for bad_start in BAD_QUERY_PARAM_STARTS)}
+    # == Aggression 2: remove all except good query params
+    else:
+        query_dict = {k: v for k, v in query_dict.items()
+                      if k in GOOD_QUERY_PARAMS or
+                      any(k.startswith(good_start) for good_start in GOOD_QUERY_PARAM_STARTS)}
+    if query_dict:
+        querystring = f"?{urlencode(query_dict, doseq=True)}"
+    else:
+        querystring = ""
+    return f"{url_pre_qs}{querystring}{fragment_suffix}"
+
+
+def get_url_root_canonized(url: str) -> Optional[str]:
     """
     Strip URL down to the scheme/subdomain/domain, e.g. 'https://www.boeing.com'.
-
     This is often used to get the root URL for later correcting of relative URLs.
+    This function CANNOT handle relative URLs.
     """
 
-    # Cannot call this function without a fully formed URL
-    try:
-        o = urlparse(url)
-        root_url = f"{o.scheme.lower()}://{o.netloc.lower()}"
-        if root_url.startswith(":"):
-            raise ValueError
-        return root_url
-    except ValueError:
-        print(f"Bad URL (or not fully formed): {url}")
+    # Parse and handle
+    o = parse_url(url)
+    if not o:
         return None
 
+    return f"{o.scheme}://{o.netloc}"
 
-def get_url_domain(url):
+
+def get_url_domain(url) -> Optional[str]:
     """
     Get domain, e.g. 'boeing.co.uk'.
 
     This is often used to create a "pretty URL" and also as part of the
     URL normalization process.
-    
+
     Note that this works with emails too, e.g.:
     'john@rex.google.com' => 'google.com'
-
     """
 
     if not url:
-        return ""
-
-    subdomain, domain, suffix = tldextract.extract(url)
-    if not domain or not suffix:
         return None
+
+    # Extract
+    subdomain, domain, suffix = tldextract.extract(url)
+    if not domain:
+        return None
+
+    # No suffix, is it likely IP address?
+    if not suffix:
+        if domain.count(".") < 3:
+            return None
+        return domain
+
+    # Expected configuration
     return f"{domain.lower()}.{suffix.lower()}"
 
 
-def get_url_path(url):
-    try:
-        o = urlparse(url, allow_fragments=False)
-        return o.path.strip()
-    except ValueError:
-        print(f"Bad URL: {url}")
+def get_url_path(url) -> Optional[str]:
+    o = parse_url(url, correct_root=True)
+    if not o:
         return None
+    # Strip spaces and slashes
+    return o.path.strip("/ ")
 
 
 def canonize_url(url: str, root_url=None) -> Optional[str]:
@@ -140,18 +216,33 @@ def canonize_url(url: str, root_url=None) -> Optional[str]:
     e.g. '/press?utm_source=123' becomes 'http://hello.com/press'
     """
 
-    # Strip bad querystrings (aggression=0 means only bad ones are stripped)
-    url = strip_query_params(url, aggression=0, keep_fragment=True, make_prefix_lower=True)
+    # Get from cache if possible
+    global canonized_url_cache
+    cache_key = f"{url}||{root_url}"
+    if USE_CACHE:
+        cache_value = canonized_url_cache.get(cache_key, None)
+        if cache_value:
+            return cache_value
+
+    # Strip bad querystrings (aggression=1 means only bad ones are stripped)
+    url_obj = parse_url(url)
+    if not url_obj:
+        return None
+    url = rebuild_url(url, url_obj, aggression=1)
     if not url:
         return None
 
-    # Catch the "meow.com" example, where protocol (e.g. http) is missing but
-    # the URL is still not relative
-    if "//" not in url and url[0] != "/" and get_url_domain(root_url) in url:
-        url = "http://" + url
-
     # Join onto the root (note that the URL's domain will override the root URL's)
-    return urljoin(root_url, url)
+    url = urljoin(root_url, url)
+
+    # Store in cache if possible, OR wipe the cache if too many URLs
+    if USE_CACHE:
+        if len(canonized_url_cache) > CACHE_SIZE:
+            canonized_url_cache = dict()
+        else:
+            canonized_url_cache[cache_key] = url
+
+    return url
 
 
 def normalize_url(url: str) -> Optional[str]:
@@ -159,53 +250,62 @@ def normalize_url(url: str) -> Optional[str]:
     Normalize the URL, stripping scheme, www, bad querystrings, extra slashes.
 
     This should be used for comparing URLs to each other, but is NOT safe to
-    use as actual URLs (for this, use `canonize_url()`), because we may damage
-    the URL in this process.
+    use as downloadable URLs (for this, use `canonize_url()`), because we may
+    damage the URL in this process.
     """
 
-    # First strip bad query params (aggression=0 means only bad ones are stripped)
-    url = strip_query_params(url, aggression=0)
+    # Get from cache if possible
+    global normalized_url_cache
+    cache_key = url
+    if USE_CACHE:
+        cache_value = normalized_url_cache.get(cache_key, None)
+        if cache_value:
+            return cache_value
+
+    # First strip bad query params (aggression=1 means only bad ones are stripped)
+    url_obj = parse_url(url)
+    if not url_obj:
+        return None
+    url = rebuild_url(url, url_obj, aggression=1)
     if not url:
         return None
-    
+
     # Next, lowercase
     url = url.lower()
-    
+
+    # Next, remove ports (e.g. //boeing.com:443)
+    if ":" in url_obj.netloc:
+        old_netloc = url_obj.netloc.lower()
+        new_netloc = old_netloc.partition(":")[0]
+        url = url.replace(old_netloc, new_netloc)
+
     # Next, strip the URL starts
-    for start in ["http://", "https://", "//", "www."]:
+    url = url.partition("://")[-1] or url
+    for start in ["//", "www."]:
         if url.startswith(start):
             url = url[len(start):]
-            
+
     # Finally, fix the trailing slashes
     url = url.rstrip("/?").replace("/?", "?")
+
+    # Store in cache if possible, OR wipe the cache if too many URLs
+    if USE_CACHE:
+        if len(normalized_url_cache) > CACHE_SIZE:
+            normalized_url_cache = dict()
+        else:
+            normalized_url_cache[cache_key] = url
 
     return url
 
 
-def get_param_from_url(url, param):
-    parsed_url = urlparse(url)
-    return parse_qs(parsed_url.query).get(param)
+def get_param_from_url(url, param) -> Optional[str]:
+    url_obj = parse_url(url)
+    if not url_obj:
+        return None
+    return parse_qs(url_obj.query).get(param)
 
 
-def lower_url(url):
-    """
-    Get lowercase of all parts of URL
-    :param url:
-    :return:
-    """
-
-    parsed_url = urlparse(url)
-    new_url = str(parsed_url.scheme).lower() + "://" + str(parsed_url.netloc).lower() + str(parsed_url.path).lower()
-    if parsed_url.params:
-        new_url += ";" + str(parsed_url.params)
-    if parsed_url.query:
-        new_url += "?" + str(parsed_url.query)
-    if parsed_url.fragment:
-        new_url += "#" + str(parsed_url.fragment)
-    return new_url
-
-
-def is_url_valid(url):
+def is_url_valid(url: str) -> bool:
     if not url:
         return False
     validator = URLValidator()
@@ -216,8 +316,10 @@ def is_url_valid(url):
         return False
 
 
-def could_url_be_article(url):
-    o = urlparse(url)
+def could_url_be_article(url: str) -> bool:
+    o = parse_url(url)
+    if not o:
+        return False
     path = o.path.strip("/")
 
     # Path and query shouldn't be too long
@@ -238,7 +340,7 @@ def could_url_be_article(url):
     return False
 
 
-def get_stripped_urls(urls, strip_down_to_substring):
+def get_stripped_urls(urls: Iterable[str], strip_down_to_substring: str):
     """
     Get the result of stripping each URL down to the provided substring.
 
@@ -248,30 +350,33 @@ def get_stripped_urls(urls, strip_down_to_substring):
     :param strip_down_to_substring:
     :return:
     """
-    stripped_urls = []
-    for url in urls:
-        split_url = url.split(strip_down_to_substring)
-        if len(split_url) > 1:
-            stripped_urls.append(split_url[0] + strip_down_to_substring)
-    return stripped_urls
+    # Remember that partition() gives a tuple length 3
+    return ["".join(u.partition(strip_down_to_substring)[:2])
+            for u in urls]
 
 
-def get_similar_urls(url: str):
+def get_similar_urls(url: str) -> Optional[Set[str]]:
     """
     Get the set of URLs which should be considered duplicative of this URL.
     """
     normalized_url = normalize_url(url)
     if not normalized_url:
-        return None
+        return set()
+
+    # Allow trailing "/" if URL doesn't have querystring/fragment
+    if "?" in normalized_url or "#" in normalized_url:
+        endings = [""]
+    else:
+        endings = ["/", ""]
 
     similar_urls = set(h + w + normalized_url + e for h in ["http://", "https://", "//", ""]
                        for w in ["www.", ""]
-                       for e in ["/", ""])
+                       for e in endings)
     similar_urls.add(url)
     return similar_urls
 
 
-def remove_same_norm_urls(urls: Iterable[str]) -> Set[str]:
+def _remove_same_norm_urls(urls: Iterable[str]) -> Set[str]:
     """
     Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates.
     :return:
@@ -286,25 +391,26 @@ def remove_same_norm_urls(urls: Iterable[str]) -> Set[str]:
     return set(norm_to_url.values())
 
 
-def canonize_and_deduplicate_urls(urls: Iterable[str],
-                                  root_url: str = None,
-                                  exclude_root: bool = False,
-                                  skip_canonization=False,
-                                  bad_patterns: Optional[Iterable[str]] = None):
+def deduplicate_urls(urls: Iterable[str],
+                     root_url: str = None,
+                     exclude_root: bool = False,
+                     canonize: bool = False,
+                     bad_patterns: Optional[Iterable[str]] = None
+                     ) -> Set[str]:
     """
-    Fully canonize and deduplicate URLs, including correcting relative URLs.
+    Deduplicate URLs (and fully canonize, if needed, including correcting relative URLs).
     """
 
     # (1) First remove duplicate URLs, according to their "normalized" version
     #     (e.g. URLs that are HTTP/HTTPS or WWW or "/" duplicates)
-    urls = remove_same_norm_urls(urls)
+    urls = _remove_same_norm_urls(urls)
 
     # (2) Remove URLs with bad patterns
     if bad_patterns:
         urls = [u for u in urls if not any(bad in u.lower() for bad in bad_patterns)]
 
     # (3) Canonize (correct) the URLs, including making relatives absolute
-    if not skip_canonization:
+    if canonize:
         urls = [canonize_url(u, root_url=root_url) for u in urls]
 
     # (4) Remove root URL, if need be
@@ -314,11 +420,11 @@ def canonize_and_deduplicate_urls(urls: Iterable[str],
     return set(u for u in urls if u)
 
 
-def link2email(link):
-    if "?" not in link:
-        link += "?"
+def link2email(url: str) -> str:
+    if "?" not in url:
+        url += "?"
 
-    return link + "utm_source"
+    return url + "utm_source"
 
 
 def extract_dict_from_query_params(query_params, possible_param_definitions: Iterable[Tuple[str, type, Any]]):
