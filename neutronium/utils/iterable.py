@@ -35,28 +35,24 @@ def separate(iterables: Iterable, condition: types.FunctionType) -> (List, List)
     return good, bad
 
 
-def dedup_objs_by_id(objs):
-    output_objs = []
-    output_ids = []
-    for obj in objs:
-        if obj.id not in output_ids:
-            output_ids.append(obj.id)
-            output_objs.append(obj)
-    return output_objs
-
-
-def dedup_objs_by_attr(objs, key):
-    output_objs = []
+def dedup_objs_by_attr(objs: Iterable, key: str) -> (List, List):
+    output_objs, removed_objs = [], []
     output_values = set()
     for obj in objs:
         value = getattr(obj, key)
         if value not in output_values:
             output_values.add(value)
             output_objs.append(obj)
-    return output_objs
+        else:
+            removed_objs.append(obj)
+    return output_objs, removed_objs
 
 
-def remove_obj_from_array_by_id(objs, id_to_remove):
+def dedup_objs_by_id(objs: Iterable) -> (List, List):
+    return dedup_objs_by_attr(objs, "id")
+
+
+def remove_obj_from_array_by_id(objs: Iterable, id_to_remove):
     output_objs = []
     for obj in objs:
         if obj.id != id_to_remove:
