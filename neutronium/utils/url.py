@@ -200,7 +200,7 @@ def get_url_domain(url) -> Optional[str]:
     return f"{domain.lower()}.{suffix.lower()}"
 
 
-def get_url_path(url) -> Optional[str]:
+def get_url_path(url: str) -> Optional[str]:
     o = parse_url(url, correct_root=True)
     if not o:
         return None
@@ -316,30 +316,6 @@ def is_url_valid(url: str) -> bool:
         return False
 
 
-def could_url_be_article(url: str) -> bool:
-    o = parse_url(url)
-    if not o:
-        return False
-    path = o.path.strip("/")
-
-    # Path and query shouldn't be too long
-    if len(path) > 30 or len(o.query) > 30:
-        # print(">> " + url)
-        return True
-
-    # Shouldn't contain too many hyphens
-    num_hyphens = len(path.split("-")) - 1
-    if num_hyphens > 3:
-        # print(">> " + url)
-        return True
-
-    # Shouldn't end in a number
-    if path[-1:].isdigit():
-        return True
-
-    return False
-
-
 def get_stripped_urls(urls: Iterable[str], strip_down_to_substring: str):
     """
     Get the result of stripping each URL down to the provided substring.
@@ -376,7 +352,7 @@ def get_similar_urls(url: str) -> Optional[Set[str]]:
     return similar_urls
 
 
-def _remove_same_norm_urls(urls: Iterable[str]) -> Set[str]:
+def remove_same_norm_urls(urls: Iterable[str], bad_urls: Optional[Iterable[str]] = None) -> Set[str]:
     """
     Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates.
     :return:
@@ -386,6 +362,11 @@ def _remove_same_norm_urls(urls: Iterable[str]) -> Set[str]:
     # NOTE: due to the way the dict comprehension works, the LAST VALUE encountered
     #       for a key will be the one kept
     norm_to_url = {normalize_url(u): u for u in urls}
+
+    # If bad URLs provided, normalize them and remove too
+    if bad_urls:
+        bad_urls = set(normalize_url(u) for u in bad_urls)
+        norm_to_url = {nu: u for nu, u in norm_to_url.items() if nu not in bad_urls}
 
     # The values of this mapping are unique by canonical URL
     return set(norm_to_url.values())
@@ -403,7 +384,7 @@ def deduplicate_urls(urls: Iterable[str],
 
     # (1) First remove duplicate URLs, according to their "normalized" version
     #     (e.g. URLs that are HTTP/HTTPS or WWW or "/" duplicates)
-    urls = _remove_same_norm_urls(urls)
+    urls = remove_same_norm_urls(urls)
 
     # (2) Remove URLs with bad patterns
     if bad_patterns:
