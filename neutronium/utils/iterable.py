@@ -1,5 +1,6 @@
 
 import types
+from itertools import chain
 
 from typing import Collection, Iterable, List
 
@@ -143,3 +144,12 @@ def is_in_sequence(list_inner: list, list_outer: list):
 
     # No match found
     return False
+
+
+def str_split_multi(text: str, substrings: Iterable[str]):
+    if not text:
+        return []
+    text_chunks = [text]
+    for substring in substrings:
+        text_chunks = chain(*[chunk.split(substring) for chunk in text_chunks])
+    return text_chunks
