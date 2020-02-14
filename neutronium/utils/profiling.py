@@ -1,24 +1,53 @@
 
-import os
 import time
 import cProfile
+from contextlib import contextmanager
+
+cprofiler = None
 
 
-# From https://zapier.com/engineering/profiling-python-boss/
-def with_cprofile(func):
+def start_cprofile():
+    global cprofiler
+    cprofiler = cProfile.Profile()
+    print("cProfile is ready to profile...")
+    cprofiler.disable()
+
+
+def end_cprofile(filename="cprofile"):
+    global cprofiler
+    filename = f"{filename}-{int(time.time())}.pstat"
+    print(f"Dumping profile to {filename}")
+    cprofiler.dump_stats(filename)
+
+
+def start_cprofile_segment():
+    global cprofiler
+    if cprofiler:
+        cprofiler.enable()
+
+
+def end_cprofile_segment():
+    global cprofiler
+    if cprofiler:
+        cprofiler.disable()
+
+
+def with_cprofile_segment(func):
     def profiled_func(*args, **kwargs):
-        profile = cProfile.Profile()
-        try:
-            profile.enable()
-            result = func(*args, **kwargs)
-            profile.disable()
-            return result
-        finally:
-            filename = os.path.expanduser(
-                os.path.join('~', f"{func.__name__}-{time.time()}.pstat")
-            )
-            profile.dump_stats(filename)
+        start_cprofile_segment()
+        result = func(*args, **kwargs)
+        end_cprofile_segment()
+        return result
     return profiled_func
+
+
+@contextmanager
+def cprofile_segment(enable=True):
+    if enable:
+        start_cprofile_segment()
+    yield
+    if enable:
+        end_cprofile_segment()
 
 
 # From https://zapier.com/engineering/profiling-python-boss/
