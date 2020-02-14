@@ -15,9 +15,10 @@ def start_cprofile():
 
 def end_cprofile(filename="cprofile"):
     global cprofiler
-    filename = f"{filename}-{int(time.time())}.pstat"
-    print(f"Dumping profile to {filename}")
-    cprofiler.dump_stats(filename)
+    if cprofiler and cprofiler.getstats():
+        filename = f"{filename}-{int(time.time())}.pstat"
+        print(f"Dumping profile to {filename}")
+        cprofiler.dump_stats(filename)
 
 
 def start_cprofile_segment():
