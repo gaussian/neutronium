@@ -36,7 +36,7 @@ def get_xpath_from_html(html, xpath_string):
 
 
 def get_good_links_from_xml_obj(xml_obj, titles=False):
-    link_xpath = ".//a[not(@rel='nofollow')]"
+    link_xpath = "//a[not(@rel='nofollow')]"
     link_url_xpath = f"{link_xpath}/@href"
 
     if titles:
