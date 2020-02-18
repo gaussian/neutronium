@@ -42,7 +42,7 @@ def get_good_links_from_xml_obj(xml_obj, titles=False):
     if titles:
         return ((e.get("href").strip(), e.text.strip() if e.text else e.text)
                 for e in xml_obj.xpath(link_xpath)
-                if e and e.get("href"))
+                if e.get("href"))
 
     return (h.strip()
             for h in xml_obj.xpath(link_url_xpath)
