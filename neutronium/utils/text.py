@@ -239,6 +239,7 @@ CURRENCIES = ("$", "€", "¥", "£")
 def clean_multi_page_report(page_texts: List[str],
                             remove_bad_lines: bool = True,
                             skip_short_sentence_pages: bool = False,
+                            merge_consecutive_cover_page_lines: bool = True,
                             allowable_headers: bool = None,
                             remove_short_lines_with: Optional[List[str]] = None):
     no_allowable_headers = not isinstance(allowable_headers, list)
@@ -443,7 +444,7 @@ def clean_multi_page_report(page_texts: List[str],
         # For the first page, merge consecutive lines at the top that are ALL CAPS
         # NOTE: don't merge more than 12, that's a little crazy
         # NOTE 2: allow newlines in between
-        if page_no == 1 and good_lines:
+        if merge_consecutive_cover_page_lines and page_no == 1 and good_lines:
             # Find first line that is NOT uppercase, i.e. the extent of the merge
             line_index_after_all_caps = next((j for j, l in enumerate(good_lines)
                                               if (not l.isupper() or "{" in l) and j <= 12), 12)
