@@ -47,6 +47,8 @@ def parse_url(url: str, correct_root: bool = True, **kwargs) -> Optional[ParseRe
         return f"http:{prefix}{u}"
 
     # (1) PREPARE URL
+    if not url:
+        return None
     # Strip
     url = url.strip()
     # Make sure URL has a protocol (unless it doesn't appear to have a domain, in
