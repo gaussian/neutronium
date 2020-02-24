@@ -619,6 +619,9 @@ def get_lang_if_not_english(url):
 
 
 def simple_singularize(word):
+    # "Us"
+    if len(word) <= 3:
+        return word
     # "Parties"
     if word.endswith("ies"):
         return word[:-3] + "y"
