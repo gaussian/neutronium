@@ -35,15 +35,21 @@ def get_xpath_from_html(html, xpath_string):
         return xml_obj.xpath(xpath_string)
 
 
-def get_good_links_from_xml_obj(xml_obj, titles=False):
-    link_xpath = "//a[not(@rel='nofollow')]"
+def get_good_links_from_xml_obj(xml_obj, titles=False, allow_fragments=True, skip_nofollow=True):
+    def url_ok(u):
+        return u and (allow_fragments or u[0] != "#")
+
+    if skip_nofollow:
+        link_xpath = "//a[not(@rel='nofollow')]"
+    else:
+        link_xpath = "//a"
     link_url_xpath = f"{link_xpath}/@href"
 
     if titles:
         return ((e.get("href").strip(), e.text.strip() if e.text else e.text)
                 for e in xml_obj.xpath(link_xpath)
-                if e.get("href"))
+                if url_ok(e.get("href")))
 
     return (h.strip()
             for h in xml_obj.xpath(link_url_xpath)
-            if h)
+            if url_ok(h))
