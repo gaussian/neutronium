@@ -11,10 +11,12 @@ BAD_QUERY_PARAMS = frozenset([
     "cx", "ie", "cof", "siteurl", "zanpid", "origin", "refid", "refsrc", "time2", "sa", "ved", "sqi",
     "elqTrackId", "redirect_uri", "redirect_url", "response_type", "_wcsid", "ss", "rt", "epik",
     "cspchd", "elqaid", "_sm_byp", "from", "isappinstalled", "hl", "form", "setlang", "pc", "omwq",
-    "inf_contact_key", "pos",
+    "inf_contact_key", "pos", "feedref",
 ])
 
-BAD_QUERY_PARAM_STARTS = ["mr:", "mc_", "fb", "utm", "facet", "WT."]
+BAD_QUERY_PARAM_STARTS = ("mr:", "mc_", "fb", "utm", "facet", "WT.")
+
+BAD_QUERY_PARAM_ENDS = ("campaign", "source", "medium", "_term")
 
 GOOD_QUERY_PARAMS = frozenset([
     "id", "ContentId", "page", "p", "output",
@@ -145,7 +147,8 @@ def rebuild_url(url: str,
     if aggression == 1:
         query_dict = {k: v for k, v in query_dict.items()
                       if k not in BAD_QUERY_PARAMS and
-                      not any(k.startswith(bad_start) for bad_start in BAD_QUERY_PARAM_STARTS)}
+                      not any(k.startswith(bad_start) for bad_start in BAD_QUERY_PARAM_STARTS) and
+                      not any(k.endswith(bad_end) for bad_end in BAD_QUERY_PARAM_ENDS)}
     # == Aggression 2: remove all except good query params
     else:
         query_dict = {k: v for k, v in query_dict.items()
