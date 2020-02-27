@@ -1,7 +1,7 @@
 import shutil
 from gzip import GzipFile
 from io import BytesIO
-from typing import Optional
+from typing import Optional, List
 
 import boto3
 from botocore.exceptions import ClientError
@@ -43,8 +43,14 @@ def upload_dir_to_s3(source_directory: str, s3_path: str, s3_bucket: str = None,
         subprocess.run(["rm", "-f", temp_filename])
 
 
-def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = None, filename=None, content=None,
-                 compress=False, verbose=False):
+def upload_to_s3(s3_path: str,
+                 s3_bucket: str = None,
+                 meta: Optional[dict] = None,
+                 filename=None,
+                 content=None,
+                 compress: bool = False,
+                 verbose: bool = False
+                 ) -> bool:
     """Some inspiration from https://gist.github.com/veselosky/9427faa38cee75cd8e27"""
 
     # Validation
@@ -59,27 +65,27 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
     )
     extra_args = dict()
     if meta:
-        extra_args['Metadata'] = meta
+        extra_args["Metadata"] = meta
     if compress:
-        extra_args['ContentEncoding'] = 'gzip'
+        extra_args["ContentEncoding"] = "gzip"
     if not content or not isinstance(content, bytes):
-        extra_args['ContentType'] = 'text/plain'
+        extra_args["ContentType"] = "text/plain"
     extra_args = extra_args or None
     base_params = {
-        'Bucket': s3_bucket or settings.S3_BUCKET_INTERNAL_FILES,
-        'Key': s3_path,
+        "Bucket": s3_bucket or settings.S3_BUCKET_INTERNAL_FILES,
+        "Key": s3_path,
     }
     upload_params = base_params.copy()
-    upload_params['ExtraArgs'] = extra_args
+    upload_params["ExtraArgs"] = extra_args
     put_params = base_params.copy()
     put_params.update(**extra_args)
 
     # Filename was provided - open this file
     if filename:
         if compress:
-            with open(filename, 'rb') as original_file_obj:
+            with open(filename, "rb") as original_file_obj:
                 compressed_file_obj = BytesIO()
-                with GzipFile(fileobj=compressed_file_obj, mode='wb') as gz:
+                with GzipFile(fileobj=compressed_file_obj, mode="wb") as gz:
                     shutil.copyfileobj(original_file_obj, gz)
                 response = s3.put_object(Body=compressed_file_obj.getvalue(), **put_params)
                 compressed_file_obj.close()
@@ -89,9 +95,9 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
     # Actual content was provided, not the filename
     else:
         if compress:
-            binary_content = content if isinstance(content, bytes) else content.encode('utf-8')
+            binary_content = content if isinstance(content, bytes) else content.encode("utf-8")
             compressed_file_obj = BytesIO()
-            with GzipFile(fileobj=compressed_file_obj, mode='wb') as gz:
+            with GzipFile(fileobj=compressed_file_obj, mode="wb") as gz:
                 gz.write(binary_content)
             response = s3.put_object(Body=compressed_file_obj.getvalue(), **put_params)
             compressed_file_obj.close()
@@ -101,8 +107,14 @@ def upload_to_s3(s3_path: str, s3_bucket: str = None, meta: Optional[dict] = Non
     if verbose:
         print(f"Uploaded to S3, response: {response}")
 
+    status_code = response.get("ResponseMetadata", dict()).get("HTTPStatusCode", 0)
+    return 200 <= status_code <= 300
 
-def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, encoding=None):
+
+def download_from_s3(s3_path: str,
+                     s3_bucket: str = None,
+                     decompress: bool = False,
+                     encoding: str = None):
     # S3 client
     s3 = boto3.client(
         "s3",
@@ -121,7 +133,7 @@ def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, enco
 
     # No object found at this location
     except ClientError as e:
-        if e.response['Error']['Code'] == 'NoSuchKey':
+        if e.response["Error"]["Code"] == "NoSuchKey":
             return None
         else:
             raise e
@@ -129,7 +141,7 @@ def download_from_s3(s3_path: str, s3_bucket: str = None, decompress=False, enco
     # Decompress if needed
     if decompress and body_bytes:
         bytestream = BytesIO(body_bytes)
-        body_bytes = GzipFile(None, 'rb', fileobj=bytestream).read()
+        body_bytes = GzipFile(None, "rb", fileobj=bytestream).read()
 
     # Decode if needed
     if encoding and body_bytes:
