@@ -49,7 +49,8 @@ def upload_to_s3(s3_path: str,
                  filename=None,
                  content=None,
                  compress: bool = False,
-                 verbose: bool = False
+                 verbose: bool = False,
+                 do_not_overwrite: bool = True
                  ) -> bool:
     """Some inspiration from https://gist.github.com/veselosky/9427faa38cee75cd8e27"""
 
@@ -59,7 +60,7 @@ def upload_to_s3(s3_path: str,
 
     # S3 client
     s3 = boto3.client(
-        's3',
+        "s3",
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
     )
@@ -78,7 +79,11 @@ def upload_to_s3(s3_path: str,
     upload_params = base_params.copy()
     upload_params["ExtraArgs"] = extra_args
     put_params = base_params.copy()
-    put_params.update(**extra_args)
+    put_params.update(extra_args)
+
+    # If overwriting is not allowed, check for existence (performs HEAD request)
+    if do_not_overwrite and _obj_exists(client=s3, **base_params):
+        return False
 
     # Filename was provided - open this file
     if filename:
@@ -132,11 +137,8 @@ def download_from_s3(s3_path: str,
         body_bytes = streaming_body.read() if streaming_body else None
 
     # No object found at this location
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "NoSuchKey":
-            return None
-        else:
-            raise e
+    except s3.exceptions.NoSuchKey:
+        return None
 
     # Decompress if needed
     if decompress and body_bytes:
@@ -152,28 +154,26 @@ def download_from_s3(s3_path: str,
     return body
 
 
-def delete_from_s3(s3_paths: List[str], s3_bucket: str):
-    # S3 client
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-    )
-
-    # Delete the provided paths
-    for s3_path in s3_paths:
-        try:
-            response = s3.delete_object(
-                Bucket=s3_bucket,
-                Key=s3_path,
-            )
-
-        # No object found at this location
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "NoSuchKey":
-                continue
-            else:
-                raise e
+# def delete_from_s3(s3_paths: List[str], s3_bucket: str):
+#     # S3 client
+#     s3 = boto3.client(
+#         "s3",
+#         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+#         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+#     )
+#
+#     # Delete the provided paths
+#     for s3_path in s3_paths:
+#         try:
+#             response = s3.delete_object(
+#                 Bucket=s3_bucket,
+#                 Key=s3_path,
+#             )
+#
+#         # No object found at this location
+#         # TODO: this exception might not be raised...
+#         except s3.exceptions.NoSuchKey:
+#             continue
 
 
 def clear_s3_dir_safe(s3_bucket: str, s3_dir: str):
@@ -203,3 +203,20 @@ def clear_s3_dir_safe(s3_bucket: str, s3_dir: str):
         count += 1
 
     print(f"Deleted {count} objects in {s3_bucket}/{s3_dir}")
+
+
+def _obj_exists(client, **kwargs):
+    try:
+        client.head_object(**kwargs)
+
+    # No object found at this location (this exception probably doesn't get called)
+    except client.exceptions.NoSuchKey:
+        return False
+
+    # No object found at this location (this exception definitely gets called)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            return False
+        raise
+
+    return True
