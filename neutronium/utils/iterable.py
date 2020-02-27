@@ -10,7 +10,7 @@ def batch(iterable: Iterable, batch_size):
         num_items = len(iterable)
         for ndx in range(0, num_items, batch_size):
             yield iterable[ndx:min(ndx + batch_size, num_items)]
-    elif isinstance(iterable, types.GeneratorType):
+    elif isinstance(iterable, (types.GeneratorType, zip)):
         while True:
             generated_batch = []
 
@@ -25,7 +25,7 @@ def batch(iterable: Iterable, batch_size):
                 yield generated_batch
                 return
     else:
-        raise ValueError(f"Bad iterable type: {type(iterable)}, try `list` or `generator`")
+        raise ValueError(f"Bad iterable type: {type(iterable)}, try `list` or `generator` or `zip`")
 
 
 def separate(iterables: Iterable, condition: types.FunctionType) -> (List, List):
