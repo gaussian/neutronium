@@ -152,6 +152,30 @@ def download_from_s3(s3_path: str,
     return body
 
 
+def delete_from_s3(s3_paths: List[str], s3_bucket: str):
+    # S3 client
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+    )
+
+    # Delete the provided paths
+    for s3_path in s3_paths:
+        try:
+            response = s3.delete_object(
+                Bucket=s3_bucket,
+                Key=s3_path,
+            )
+
+        # No object found at this location
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                continue
+            else:
+                raise e
+
+
 def clear_s3_dir_safe(s3_bucket: str, s3_dir: str):
     delete_limit = 10
 
