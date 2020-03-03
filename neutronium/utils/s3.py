@@ -51,7 +51,7 @@ def upload_to_s3(s3_path: str,
                  compress: bool = False,
                  verbose: bool = False,
                  do_not_overwrite: bool = True
-                 ) -> bool:
+                 ) -> Optional[str]:
     """Some inspiration from https://gist.github.com/veselosky/9427faa38cee75cd8e27"""
 
     # Validation
@@ -83,7 +83,7 @@ def upload_to_s3(s3_path: str,
 
     # If overwriting is not allowed, check for existence (performs HEAD request)
     if do_not_overwrite and _obj_exists(client=s3, **base_params):
-        return False
+        return "exists"
 
     # Filename was provided - open this file
     if filename:
@@ -113,7 +113,9 @@ def upload_to_s3(s3_path: str,
         print(f"Uploaded to S3, response: {response}")
 
     status_code = response.get("ResponseMetadata", dict()).get("HTTPStatusCode", 0)
-    return 200 <= status_code <= 300
+    if 200 <= status_code <= 300:
+        return None
+    return str(status_code)
 
 
 def download_from_s3(s3_path: str,
