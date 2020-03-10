@@ -72,3 +72,14 @@ def validate_date(date):
         return False
 
     return True
+
+
+SERIALIZATION_DATE_FORMAT = "%m-%d-%Y, %H:%M:%S %z"
+
+
+def serialize_date(date: datetime.datetime) -> str:
+    return date.strftime(SERIALIZATION_DATE_FORMAT)
+
+
+def deserialize_date(date: str) -> datetime.datetime:
+    return datetime.datetime.strptime(date, SERIALIZATION_DATE_FORMAT)
