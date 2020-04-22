@@ -1,8 +1,8 @@
 
 import types
-from itertools import chain
+from itertools import chain, starmap
 
-from typing import Collection, Iterable, List
+from typing import Collection, Iterable, List, Any, Tuple, Dict
 
 
 def batch(iterable: Iterable, batch_size):
@@ -70,12 +70,36 @@ def remove_objs_from_set(master_set, removal_objs):
     return master_set
 
 
-# TODO: deprecated, delete this
-def multi_needle_search(haystack: Collection, needles: Collection):
-    for needle in needles:
-        if needle in haystack:
-            return True
-    return False
+def flatten_dict(dictionary, value_op=None) -> Dict[Tuple, Any]:
+    """
+    Flatten a nested dictionary structure. Return format is {(a, b, c, d...): value}
+
+    Based on https://codereview.stackexchange.com/a/173483
+    """
+
+    def unpack(parent_key, parent_value):
+        """Unpack one level of nesting in a dictionary"""
+        try:
+            items = parent_value.items()
+        except AttributeError:
+            # parent_value was not a dict, no need to flatten
+            yield (parent_key, parent_value)
+        else:
+            for key, value in items:
+                if value_op:
+                    value = value_op(key, value)
+                yield parent_key + (key,), value
+
+    # Put each key into a tuple to initiate building a tuple of subkeys
+    dictionary = {(key,): value for key, value in dictionary.items()}
+
+    while True:
+        # Keep unpacking the dictionary until all value's are not dictionary's
+        dictionary = dict(chain.from_iterable(starmap(unpack, dictionary.items())))
+        if not any(isinstance(value, dict) for value in dictionary.values()):
+            break
+
+    return dictionary
 
 
 def many(iterable, n):
