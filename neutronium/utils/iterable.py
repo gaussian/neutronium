@@ -36,6 +36,15 @@ def separate(iterables: Iterable, condition: types.FunctionType) -> (List, List)
     return good, bad
 
 
+def dedup(items: Iterable) -> List:
+    output_set, output_list = set(), []
+    for item in items:
+        if item not in output_set:
+            output_list.append(item)
+            output_set.add(item)
+    return output_list
+
+
 def dedup_objs_by_attr(objs: Iterable, key: str) -> (List, List):
     output_objs, removed_objs = [], []
     output_values = set()
