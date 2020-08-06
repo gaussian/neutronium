@@ -277,8 +277,8 @@ def clean_multi_page_report(page_texts: List[str],
                 # Remove any line that is almost completely non alpha (e.g. number strings)
                 if fraction_non_alpha > 0.8:
                     continue
-                # Remove super short lines
-                if len(line) <= 8 and not line[0] == "•":
+                # Remove super short lines, that do not start with a special character
+                if len(line) <= 8 and line[0] not in ("•", "{"):
                     continue
                 # Remove short lines that end in number or % or start with currency
                 if len(line) <= 25 and (line[-1].isdigit() or line[-1] in ("%",) or line[0] in CURRENCIES) \
