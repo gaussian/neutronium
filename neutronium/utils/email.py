@@ -1,9 +1,4 @@
 
-import hashlib
-import hmac
-import os
-import re
-
 
 def get_canonical_email(email=None):
     """
