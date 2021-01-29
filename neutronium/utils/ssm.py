@@ -1,9 +1,14 @@
 import boto3
 
+from neutron.services.ec2_metadata import get_ec2_region
+
 
 def get_ssm_parameters_by_path(path: str, recursive: bool = True, with_decryption: bool = True):
     # S3 client
-    client = boto3.client("ssm")
+    client = boto3.client(
+        "ssm",
+        region_name=get_ec2_region()
+    )
 
     # Get parameters from SSM
     parameters = client.get_parameters_by_path(
