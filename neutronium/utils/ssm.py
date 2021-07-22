@@ -1,7 +1,7 @@
 from ec2_metadata import ec2_metadata
 
 
-def get_ssm_parameters_by_path(path: str, recursive: bool = True, with_decryption: bool = True):
+def get_ssm_parameters_by_path(path: str, recursive: bool = True, with_decryption: bool = True, limit: int = 20):
     import boto3
 
     # S3 client
@@ -14,7 +14,8 @@ def get_ssm_parameters_by_path(path: str, recursive: bool = True, with_decryptio
     parameters = client.get_parameters_by_path(
         Path=path,
         Recursive=recursive,
-        WithDecryption=with_decryption
+        WithDecryption=with_decryption,
+        MaxResults=limit
     ).get("Parameters")
 
     # Turn into dict
