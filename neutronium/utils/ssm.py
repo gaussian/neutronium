@@ -1,7 +1,11 @@
 from ec2_metadata import ec2_metadata
 
 
-def get_ssm_parameters_by_path(path: str, recursive: bool = True, with_decryption: bool = True, limit: int = 20):
+def get_ssm_parameters_by_path(path: str,
+                               recursive: bool = True,
+                               with_decryption: bool = True,
+                               limit: int = 20
+                               ) -> dict:
     import boto3
 
     # S3 client
@@ -11,17 +15,27 @@ def get_ssm_parameters_by_path(path: str, recursive: bool = True, with_decryptio
     )
 
     # Get parameters from SSM
-    parameters = client.get_parameters_by_path(
-        Path=path,
-        Recursive=recursive,
-        WithDecryption=with_decryption,
-        MaxResults=limit
-    ).get("Parameters")
+    next_token = None
+    parameters = []
+    while len(parameters) < limit:
+        response = client.get_parameters_by_path(
+            Path=path,
+            Recursive=recursive,
+            WithDecryption=with_decryption,
+            NextToken=next_token,
+        )
+        new_parameters = response.get("Parameters")
+        if not new_parameters:
+            raise ValueError("No parameters returned by AWS")
+        parameters += new_parameters
+        next_token = response.get("NextToken", None)
+        if not next_token:
+            break
 
     # Turn into dict
-    parameters = {
+    parameters_dict = {
         parameter.get("Name").replace(path, "").lstrip("/"): parameter.get("Value")
         for parameter in parameters
     }
 
-    return parameters
+    return parameters_dict
