@@ -18,11 +18,12 @@ def get_ssm_parameters_by_path(path: str,
     next_token = None
     parameters = []
     while len(parameters) < limit:
+        next_token_kwargs = {"NextToken": next_token} if next_token else dict()
         response = client.get_parameters_by_path(
             Path=path,
             Recursive=recursive,
             WithDecryption=with_decryption,
-            NextToken=next_token,
+            **next_token_kwargs
         )
         new_parameters = response.get("Parameters")
         if not new_parameters:
