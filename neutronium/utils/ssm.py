@@ -1,4 +1,3 @@
-from ec2_metadata import ec2_metadata
 
 
 def get_ssm_parameters_by_path(path: str,
@@ -7,11 +6,18 @@ def get_ssm_parameters_by_path(path: str,
                                limit: int = 20
                                ) -> dict:
     import boto3
+    import os
+
+    if os.environ.get("AWS_DEFAULT_REGION", None):
+        region_name = None
+    else:
+        from ec2_metadata import ec2_metadata
+        region_name = ec2_metadata.region
 
     # S3 client
     client = boto3.client(
         "ssm",
-        region_name=ec2_metadata.region
+        region_name=region_name
     )
 
     # Get parameters from SSM
