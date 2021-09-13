@@ -241,7 +241,8 @@ def clean_multi_page_report(page_texts: List[str],
                             remove_bad_lines: bool = True,
                             skip_short_sentence_pages: bool = False,
                             merge_consecutive_cover_page_lines: bool = True,
-                            allowable_headers: bool = None,
+                            allowable_headers: Optional[List[str]] = None,
+                            aggressive_headers: bool = False,
                             remove_short_lines_with: Optional[List[str]] = None):
     no_allowable_headers = not isinstance(allowable_headers, list)
     allowable_headers = allowable_headers or []
@@ -302,7 +303,8 @@ def clean_multi_page_report(page_texts: List[str],
                         line[0].isupper() and \
                         line[-1] not in (".", ",") and \
                         (". " not in line or line[:4] in ("Item", "Sect", "Part")) and \
-                        (line[-1] not in END_CHARS or sum(map(str.isupper, line)) / len(line) >= 0.5):
+                        (sum(map(str.isupper, line)) / len(line) >= 0.5 or
+                         (aggressive_headers and line[-1] not in END_CHARS)):
                     line = "\n" + line + "\n"
                 # Fix bad checkboxes
                 # TODO: is this the right place
@@ -319,7 +321,7 @@ def clean_multi_page_report(page_texts: List[str],
     # (2) Very short repeated headers throughout the document
     header_footer_size = 3
     possible_header_line_indices = range(-header_footer_size, header_footer_size)
-    non_empty_lines_by_page = [[l for l in p if l] for p in lines_by_page]
+    non_empty_lines_by_page = [[ln for ln in p if ln] for p in lines_by_page]
     header_lines, short_repeating_lines = set(), set()
     if remove_bad_lines:
         # Page header/footer
@@ -336,10 +338,10 @@ def clean_multi_page_report(page_texts: List[str],
                                    (cnt >= 4 and len(ln) < 100)
                            ))
         # Very short repeating lines
-        short_lines = [l for p in non_empty_lines_by_page for l in p
-                       if len(l) <= 50 and (no_allowable_headers or l not in allowable_headers)]
+        short_lines = [ln for p in non_empty_lines_by_page for ln in p
+                       if len(ln) <= 50 and (no_allowable_headers or ln not in allowable_headers)]
         counter = Counter(short_lines)
-        short_repeating_lines = set(l for l, cnt in counter.items() if cnt >= 3)
+        short_repeating_lines = set(ln for ln, cnt in counter.items() if cnt >= 3)
 
     # Debug
     # perf.print_time_since(level=3, pre_print="prel")
@@ -385,7 +387,7 @@ def clean_multi_page_report(page_texts: List[str],
             skip = True
 
         # Skip pages that are almost entirely lots of short headers/phrases
-        if skip_short_sentence_pages and len(lines) > 6 and sum(len(l) <= 80 for l in lines) / len(lines) >= 0.9:
+        if skip_short_sentence_pages and len(lines) > 6 and sum(len(ln) <= 80 for ln in lines) / len(lines) >= 0.9:
             skip = True
 
         # If skipping, add some padding space and reset the "previous page"
@@ -447,8 +449,8 @@ def clean_multi_page_report(page_texts: List[str],
         # NOTE 2: allow newlines in between
         if merge_consecutive_cover_page_lines and page_no == 1 and good_lines:
             # Find first line that is NOT uppercase, i.e. the extent of the merge
-            line_index_after_all_caps = next((j for j, l in enumerate(good_lines)
-                                              if (not l.isupper() or "{" in l) and j <= 12), 12)
+            line_index_after_all_caps = next((j for j, ln in enumerate(good_lines)
+                                              if (not ln.isupper() or "{" in ln) and j <= 12), 12)
             if line_index_after_all_caps:
                 if line_index_after_all_caps > len(good_lines):
                     line_index_after_all_caps = len(good_lines)
