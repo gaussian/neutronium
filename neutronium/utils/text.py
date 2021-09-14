@@ -242,7 +242,7 @@ def clean_multi_page_report(page_texts: List[str],
                             skip_short_sentence_pages: bool = False,
                             merge_consecutive_cover_page_lines: bool = True,
                             allowable_headers: Optional[List[str]] = None,
-                            aggressive_headers: bool = False,
+                            aggressive_headers: bool = True,
                             remove_short_lines_with: Optional[List[str]] = None):
     no_allowable_headers = not isinstance(allowable_headers, list)
     allowable_headers = allowable_headers or []
