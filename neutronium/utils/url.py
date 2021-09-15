@@ -198,6 +198,9 @@ def get_url_domain(url) -> Optional[str]:
     # No suffix, is it likely IP address?
     if not suffix:
         if domain.count(".") < 3:
+            # Special case for docker internal
+            if domain.lower() == "internal":
+                return f"{subdomain.lower()}.{domain.lower()}"
             return None
         return domain
 
