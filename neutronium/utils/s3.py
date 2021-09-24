@@ -44,7 +44,7 @@ def upload_dir_to_s3(source_directory: str, s3_path: str, s3_bucket: str = None,
 
 
 def upload_to_s3(s3_path: str,
-                 s3_bucket: str = None,
+                 s3_bucket: str,
                  meta: Optional[dict] = None,
                  filename=None,
                  content=None,
@@ -73,7 +73,7 @@ def upload_to_s3(s3_path: str,
         extra_args["ContentType"] = "text/plain"
     extra_args = extra_args or None
     base_params = {
-        "Bucket": s3_bucket or settings.S3_BUCKET_INTERNAL_FILES,
+        "Bucket": s3_bucket,
         "Key": s3_path,
     }
     upload_params = base_params.copy()
@@ -119,7 +119,7 @@ def upload_to_s3(s3_path: str,
 
 
 def download_from_s3(s3_path: str,
-                     s3_bucket: str = None,
+                     s3_bucket: str,
                      decompress: bool = False,
                      encoding: str = None):
     # S3 client
@@ -132,7 +132,7 @@ def download_from_s3(s3_path: str,
     # Download
     try:
         response = s3.get_object(
-            Bucket=s3_bucket or settings.S3_BUCKET_INTERNAL_FILES,
+            Bucket=s3_bucket,
             Key=s3_path,
         )
         streaming_body = response.get("Body", None)
