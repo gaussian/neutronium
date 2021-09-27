@@ -1,31 +1,34 @@
 
 import types
-from itertools import chain, starmap
+from itertools import chain, starmap, islice
 
 from typing import Collection, Iterable, List, Any, Tuple, Dict
 
 
 def batch(iterable: Iterable, batch_size):
+    """
+    Batching of any arbitrary iterable, including generators
+    Source: https://code.activestate.com/recipes/303279-getting-items-in-batches/
+    """
+    sourceiter = iter(iterable)
+    try:
+        while True:
+            batchiter = islice(sourceiter, batch_size)
+            yield chain([next(batchiter)], batchiter)
+    except StopIteration:
+        return
+
+
+def precomputed_batch(iterable: Iterable, batch_size):
+    """
+    Batches you can use len() on
+    """
     if isinstance(iterable, list) or isinstance(iterable, str):
         num_items = len(iterable)
         for ndx in range(0, num_items, batch_size):
             yield iterable[ndx:min(ndx + batch_size, num_items)]
-    elif isinstance(iterable, (types.GeneratorType, zip)):
-        while True:
-            generated_batch = []
-
-            # Build and yield an array of generated items
-            try:
-                for i in range(0, batch_size):
-                    generated_batch.append(next(iterable))
-                yield generated_batch
-
-            # Yield what remains
-            except StopIteration:
-                yield generated_batch
-                return
     else:
-        raise ValueError(f"Bad iterable type: {type(iterable)}, try `list` or `generator` or `zip`")
+        raise ValueError(f"Bad iterable type: {type(iterable)}, try `list` or `str`")
 
 
 def separate(iterables: Iterable, condition: types.FunctionType) -> (List, List):
