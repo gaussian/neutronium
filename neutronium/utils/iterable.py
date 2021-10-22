@@ -114,6 +114,15 @@ def flatten_dict(dictionary, value_op=None) -> Dict[Tuple, Any]:
     return dictionary
 
 
+def dict_to_tuple_list(dictionary):
+    return [(k, v) for k, v in dictionary.items()]
+
+
+def dict_to_tuple_chained(dictionary):
+    tuple_list = dict_to_tuple_list(dictionary)
+    return tuple(chain(*tuple_list))
+
+
 def many(iterable, n):
     """
     This function returns whether the iterable is True at least n times.
