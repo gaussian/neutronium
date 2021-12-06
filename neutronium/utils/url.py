@@ -176,7 +176,7 @@ def get_url_root_canonized(url: str) -> Optional[str]:
     return f"{o.scheme}://{o.netloc}"
 
 
-def get_url_domain(url) -> Optional[str]:
+def get_url_domain(url, include_subdomain=False) -> Optional[str]:
     """
     Get domain, e.g. 'boeing.co.uk'.
 
@@ -205,7 +205,10 @@ def get_url_domain(url) -> Optional[str]:
         return domain
 
     # Expected configuration
-    return f"{domain.lower()}.{suffix.lower()}"
+    output = f"{domain.lower()}.{suffix.lower()}"
+    if include_subdomain:
+        return f"{subdomain.lower()}.{output}"
+    return output
 
 
 def get_url_path(url: str) -> Optional[str]:
