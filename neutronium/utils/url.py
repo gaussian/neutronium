@@ -206,7 +206,7 @@ def get_url_domain(url, include_subdomain=False) -> Optional[str]:
 
     # Expected configuration
     output = f"{domain.lower()}.{suffix.lower()}"
-    if include_subdomain:
+    if include_subdomain and subdomain:
         return f"{subdomain.lower()}.{output}"
     return output
 
