@@ -292,7 +292,7 @@ def normalize_url(url: str) -> Optional[str]:
 
     # Next, strip the URL starts
     url = url.partition("://")[-1] or url
-    for start in ["//", "www."]:
+    for start in ["//", "www.", "m."]:
         if url.startswith(start):
             url = url[len(start):]
 
@@ -357,7 +357,7 @@ def get_similar_urls(url: str) -> Optional[Set[str]]:
         endings = ["/", ""]
 
     similar_urls = set(h + w + normalized_url + e for h in ["http://", "https://", "//", ""]
-                       for w in ["www.", ""]
+                       for w in ["www.", "m.", ""]
                        for e in endings)
     similar_urls.add(url)
     return similar_urls
