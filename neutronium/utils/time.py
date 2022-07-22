@@ -1,13 +1,13 @@
 import datetime
 
-import pytz
+from zoneinfo import ZoneInfo
 
 
 def get_time_ago(num_days, time_ago_from=None, set_time_to_midnight=False):
 
     # Default is time ago from today
     if time_ago_from is None:
-        time_ago_from = datetime.datetime.now(tz=pytz.utc)
+        time_ago_from = datetime.datetime.now(tz=ZoneInfo("UTC"))
 
     # Set the time portion to be 0 for midnight
     if set_time_to_midnight:
@@ -23,7 +23,7 @@ def get_time_diff_days(time_til, time_ago_from=None):
 
     # Default is time ago from today
     if time_ago_from is None:
-        time_ago_from = datetime.datetime.now(tz=pytz.utc)
+        time_ago_from = datetime.datetime.now(tz=ZoneInfo("UTC"))
 
     diff = time_til - time_ago_from
 
@@ -31,11 +31,11 @@ def get_time_diff_days(time_til, time_ago_from=None):
 
 
 def get_year_start(year):
-    return datetime.datetime(year=year, month=1, day=1, hour=0, minute=0, second=0, tzinfo=pytz.utc)
+    return datetime.datetime(year=year, month=1, day=1, hour=0, minute=0, second=0, tzinfo=ZoneInfo("UTC"))
 
 
 def get_year_end(year):
-    return datetime.datetime(year=year, month=12, day=31, hour=23, minute=59, second=59, tzinfo=pytz.utc)
+    return datetime.datetime(year=year, month=12, day=31, hour=23, minute=59, second=59, tzinfo=ZoneInfo("UTC"))
 
 
 def get_day_start(date):
@@ -53,10 +53,10 @@ def localize_to_utc(date):
 
         # If date is timezone-naive
         if date.tzinfo is None or date.tzinfo.utcoffset(date) is None:
-            return pytz.utc.localize(date)
+            return date.replace(tzinfo=ZoneInfo("UTC"))
 
         # If has timezone, set timezone as UTC
-        return date.astimezone(pytz.utc)
+        return date.astimezone(ZoneInfo("UTC"))
 
     # None otherwise
     return None
@@ -67,8 +67,8 @@ def validate_date(date):
     if not date:
         return False
 
-    now = datetime.datetime.now(tz=pytz.utc)
-    if date > now + datetime.timedelta(days=15) or date < datetime.datetime(1971, 1, 1, tzinfo=pytz.utc):
+    now = datetime.datetime.now(tz=ZoneInfo("UTC"))
+    if date > now + datetime.timedelta(days=15) or date < datetime.datetime(1971, 1, 1, tzinfo=ZoneInfo("UTC")):
         return False
 
     return True
