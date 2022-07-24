@@ -1,6 +1,6 @@
 import datetime
 
-from zoneinfo import ZoneInfo
+from backports.zoneinfo import ZoneInfo
 
 
 def get_time_ago(num_days, time_ago_from=None, set_time_to_midnight=False):
