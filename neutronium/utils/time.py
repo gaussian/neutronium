@@ -3,11 +3,15 @@ import datetime
 from backports.zoneinfo import ZoneInfo
 
 
+def utc_now():
+    return datetime.datetime.now(tz=ZoneInfo("UTC"))
+
+
 def get_time_ago(num_days, time_ago_from=None, set_time_to_midnight=False):
 
     # Default is time ago from today
     if time_ago_from is None:
-        time_ago_from = datetime.datetime.now(tz=ZoneInfo("UTC"))
+        time_ago_from = utc_now()
 
     # Set the time portion to be 0 for midnight
     if set_time_to_midnight:
@@ -23,7 +27,7 @@ def get_time_diff_days(time_til, time_ago_from=None):
 
     # Default is time ago from today
     if time_ago_from is None:
-        time_ago_from = datetime.datetime.now(tz=ZoneInfo("UTC"))
+        time_ago_from = utc_now()
 
     diff = time_til - time_ago_from
 
@@ -83,3 +87,34 @@ def serialize_date(date: datetime.datetime) -> str:
 
 def deserialize_date(date: str) -> datetime.datetime:
     return datetime.datetime.strptime(date, SERIALIZATION_DATE_FORMAT)
+
+
+def parse_relative_date(date_string: str):
+    from dateutil.parser import parse as date_parser
+
+    if not date_string:
+        return None
+
+    if date_string == "now":
+        return utc_now()
+
+    date_string_suffix = date_string[-1].lower()
+    if date_string_suffix in ("s", "h", "d", "m", "y"):
+        remaining_string = date_string[:-1]
+        try:
+            num = int(remaining_string)
+            origin_date = utc_now()
+            if date_string_suffix == "s":
+                origin_date += datetime.timedelta(seconds=num)
+            elif date_string_suffix == "h":
+                origin_date += datetime.timedelta(hours=num)
+            elif date_string_suffix == "d":
+                origin_date += datetime.timedelta(days=num)
+            elif date_string_suffix == "m":
+                origin_date += datetime.timedelta(days=num * 30)
+            elif date_string_suffix == "y":
+                origin_date += datetime.timedelta(days=num * 365)
+        except ValueError:
+            pass
+
+    return date_parser(date_string)
