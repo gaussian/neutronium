@@ -1,13 +1,11 @@
 
+from typing import List, Optional
+
 import difflib
 import random
 import re
 import string
 from collections import Counter
-from typing import List, Optional
-
-from inflection import singularize, pluralize
-from unidecode import unidecode
 
 
 def multiple_replace(text, replace_dict, flags=0) -> str:
@@ -34,6 +32,8 @@ def random_string(num_chars):
 
 
 def unicode_normalize(text, lowercase):
+    from unidecode import unidecode
+    
     if lowercase:
         text = text.lower()
 
@@ -661,6 +661,7 @@ def simple_pluralize(word):
 
 # NOTE: this is simpler whan using morphy...
 def build_rough_set_with_plurals_and_singulars(words):
+    from inflection import singularize, pluralize
 
     # Add all existing words
     output = set(words)
