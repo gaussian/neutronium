@@ -18,7 +18,7 @@ def upload_dir_to_s3(source_directory: str, s3_path: str, s3_bucket: str = None,
         raise NotImplementedError("Only collected/zipped directories supported for S3 upload")
 
     # Temp file to store archive (excluding extension)
-    temp_filename_base = "/tmp/" + re.compile('[\W_]+').sub('', source_directory)
+    temp_filename_base = "/tmp/" + re.compile(r'[\W_]+').sub('', source_directory)
     temp_filename = temp_filename_base + ".tar.gz"
 
     # Archive the directory
