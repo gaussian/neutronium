@@ -81,6 +81,8 @@ def erase_file(file_path: str):
             handle.write('')
 
 
+JSON_DATE_SERIALIZE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 def json_serialize(obj):
     import json
     import datetime
@@ -91,7 +93,7 @@ def json_serialize(obj):
             if isinstance(o, set):
                 return [self.default(oi) for oi in o]
             if isinstance(o, datetime.datetime):
-                return o.strftime("%Y-%m-%d %H:%M:%S")
+                return o.strftime(JSON_DATE_SERIALIZE_FORMAT)
             if isinstance(o, tuple) and hasattr(o, "_fields") and  "__repr__" in o.__class__.__dict__:
                 return o.__repr__()
             return json.JSONEncoder.default(self, o)
@@ -105,6 +107,9 @@ def serialize_to_file(querysets, file_path: str):
     with open(file_path, "w+") as out:
         for queryset in querysets:
             serializers.serialize('json', queryset, stream=out)
+
+def make_filename_friendly(filename: str) -> str:
+    return "".join([c for c in filename if c.isalpha() or c.isdigit() or c==' ']).rstrip()
 
 
 @contextmanager
