@@ -113,11 +113,12 @@ def make_filename_friendly(filename: str) -> str:
 
 
 @contextmanager
-def temporary_named_file(data, binary=True, encoding=None):
+def temporary_named_file(data=None, binary=True, encoding=None, suffix=None):
     """Windows-friendly temp named file context manager."""
     mode = 'w+b' if binary else 'w+'
-    fp = tempfile.NamedTemporaryFile(delete=False, encoding=encoding, mode=mode)
-    fp.write(data)
-    fp.close()
+    fp = tempfile.NamedTemporaryFile(delete=False, encoding=encoding, mode=mode, suffix=suffix)
+    if data is not None:
+        fp.write(data)
     yield fp
+    fp.close()
     os.remove(fp.name)
