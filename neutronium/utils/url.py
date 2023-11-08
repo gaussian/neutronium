@@ -191,7 +191,8 @@ def get_url_domain(url, include_subdomain=False) -> Optional[str]:
         return None
 
     # Extract
-    subdomain, domain, suffix, is_private = tldextract.extract(url)
+    ext = tldextract.extract(url)
+    subdomain, domain, suffix = ext.subdomain, ext.domain, ext.suffix
     if not domain:
         return None
 
