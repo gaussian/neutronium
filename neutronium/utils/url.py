@@ -4,7 +4,6 @@ from typing import Tuple, Any, Optional, List, Iterable, Set
 
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-import tldextract
 
 BAD_QUERY_PARAMS = frozenset([
     "gclid", "mkt_tok", "sid", "atrkid", "goal", "_hsenc", "_hsmi", "__hssc", "__hstc", "hsCtaTracking",
@@ -186,6 +185,8 @@ def get_url_domain(url, include_subdomain=False) -> Optional[str]:
     Note that this works with emails too, e.g.:
     'john@rex.google.com' => 'google.com'
     """
+
+    import tldextract
 
     if not url:
         return None
