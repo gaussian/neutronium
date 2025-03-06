@@ -1,10 +1,11 @@
+import unittest
+
 from django.test import tag
 
-from neutron.tests.enhanced_test_case_base import EnhancedTestCaseBase
 from .requester import Requester
 
 
-class RequestUtilsTestCase(EnhancedTestCaseBase):
+class RequestUtilsTestCase(unittest.TestCase):
     @classmethod
     def setUpTestData(cls):
         pass
@@ -16,15 +17,21 @@ class RequestUtilsTestCase(EnhancedTestCaseBase):
             # ("https://www.nytimes.com/2014/03/29/business/a-florida-engineer-unlocked-the-mystery-of-gms-ignition-flaw.html?_r=2",
             #  "https://www.nytimes.com/2014/03/29/business/a-florida-engineer-unlocked-the-mystery-of-gms-ignition-flaw.html",
             #  None),
-            ("https://money.cnn.com/2007/09/26/news/companies/uaw_gm_deal/index.htm?postversion=2007092604",
-             "https://money.cnn.com/2007/09/26/news/companies/uaw_gm_deal/index.htm",
-             None),
-            ("https://money.cnn.com/2007/09/24/news/companies/gm_uaw_strikedeadline/?postversion=2007092412",
-             "https://money.cnn.com/2007/09/24/news/companies/gm_uaw_strikedeadline/",
-             None),
-            ("https://www.law360.com/commercialcontracts/articles/1241729/contractor-must-face-ex-nfler-s-dream-house-ip-claims",
-             "https://www.law360.com/articles/1241729/contractor-must-face-ex-nfler-s-dream-house-ip-claims",
-             None),
+            (
+                "https://money.cnn.com/2007/09/26/news/companies/uaw_gm_deal/index.htm?postversion=2007092604",
+                "https://money.cnn.com/2007/09/26/news/companies/uaw_gm_deal/index.htm",
+                None,
+            ),
+            (
+                "https://money.cnn.com/2007/09/24/news/companies/gm_uaw_strikedeadline/?postversion=2007092412",
+                "https://money.cnn.com/2007/09/24/news/companies/gm_uaw_strikedeadline/",
+                None,
+            ),
+            (
+                "https://www.law360.com/commercialcontracts/articles/1241729/contractor-must-face-ex-nfler-s-dream-house-ip-claims",
+                "https://www.law360.com/articles/1241729/contractor-must-face-ex-nfler-s-dream-house-ip-claims",
+                None,
+            ),
             # TODO: this results in an SSL error, despite not using SSL...so can't use this anymore
             # ("http://www.pyxisintel.com",
             #  "https://www.bain.com/industry-expertise/private-equity/pyxis/",
