@@ -1,10 +1,11 @@
+import unittest
+
 from django.test import tag
 
-from neutron.tests.enhanced_test_case_base import EnhancedTestCaseBase
 from neutron.utils.text import normalize_web_text
 
 
-class TextUtilsTestCase(EnhancedTestCaseBase):
+class TextUtilsTestCase(unittest.TestCase):
     @classmethod
     def setUpTestData(cls):
         pass
@@ -14,11 +15,19 @@ class TextUtilsTestCase(EnhancedTestCaseBase):
         data = [
             ("Hello(R)", "Hello"),
             ("..Hello©", "..Hello"),
-            ("\n\nthis is some text,\" said the man…\n\n\r\n", "this is some text,\" said the man..."),
-            ("\"Nothing wrong with Nancy’s cough,\"\n\nI said - leaning in",
-             "\"Nothing wrong with Nancy's cough,\"\n\nI said — leaning in"),
-            ("Everyone had an alibi—except John.", "Everyone had an alibi — except John."),
-            ("Everyone had an alibi-except John.", "Everyone had an alibi-except John.")
+            (
+                '\n\nthis is some text," said the man…\n\n\r\n',
+                'this is some text," said the man...',
+            ),
+            (
+                '"Nothing wrong with Nancy’s cough,"\n\nI said - leaning in',
+                '"Nothing wrong with Nancy\'s cough,"\n\nI said — leaning in',
+            ),
+            (
+                "Everyone had an alibi—except John.",
+                "Everyone had an alibi — except John.",
+            ),
+            ("Everyone had an alibi-except John.", "Everyone had an alibi-except John."),
         ]
 
         for text, desired_output in data:
