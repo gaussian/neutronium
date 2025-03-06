@@ -10,10 +10,14 @@ def get_ssm_parameters_by_path(
     import boto3
     import os
 
-    if os.environ.get("AWS_DEFAULT_REGION", None):
-        region_name = None
+    default_region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+    if default_region:
+        region_name = default_region
     else:
-        region_name = get_ec2_metadata().region
+        try:
+            region_name = get_ec2_metadata().region
+        except Exception as e:
+            region_name = None
 
     # S3 client
     client = boto3.client("ssm", region_name=region_name)
