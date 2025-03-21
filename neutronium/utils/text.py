@@ -10,16 +10,18 @@ from collections import Counter
 
 def multiple_replace(text, replace_dict, flags=0) -> str:
     """From https://www.safaribooksonline.com/library/view/python-cookbook-2nd/0596007973/ch01s19.html"""
-    rx = re.compile('|'.join(map(re.escape, replace_dict)), flags)
+    rx = re.compile("|".join(map(re.escape, replace_dict)), flags)
     return rx.sub(lambda match: replace_dict[match.group(0)], text)
 
 
 def make_multiple_replace_func(*args, **kwargs):
     """From https://www.safaribooksonline.com/library/view/python-cookbook-2nd/0596007973/ch01s19.html"""
     replace_dict = dict(*args, **kwargs)
-    rx = re.compile('|'.join(map(re.escape, replace_dict)))
+    rx = re.compile("|".join(map(re.escape, replace_dict)))
+
     def xlat(text):
         return rx.sub(lambda match: replace_dict[match.group(0)], text)
+
     return xlat
 
 
@@ -28,28 +30,22 @@ multiple_replace_bad_texts = None
 
 def random_string(num_chars):
     chars = string.ascii_letters + string.digits
-    return ''.join(random.choice(chars) for _ in range(num_chars))
-
-
-def unicode_normalize(text, lowercase):
-    from unidecode import unidecode
-    
-    if lowercase:
-        text = text.lower()
-
-    return unidecode(text.strip())
+    return "".join(random.choice(chars) for _ in range(num_chars))
 
 
 def rchop(text, ending):
     if text.endswith(ending):
-        return text[:-len(ending)]
+        return text[: -len(ending)]
     return text
 
 
 # Regular expression pattern to remove UTF-8 greater than 3 bytes
-re_pattern_utf8_fix = re.compile(u'[^\u0000-\uD7FF\uE000-\uFFFF]', re.UNICODE)
+re_pattern_utf8_fix = re.compile("[^\u0000-\ud7ff\ue000-\uffff]", re.UNICODE)
+
+
 def remove_4_byte_unicode(text):
-    return re_pattern_utf8_fix.sub(u'\uFFFD', text)
+    return re_pattern_utf8_fix.sub("\ufffd", text)
+
 
 string_norm_dict = {
     # Standardize "hyphens with spaces"
@@ -115,7 +111,7 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
 
     # Fix spacing
     # text = text.replace("  ", " ")
-    text = re.sub(r"  +", " ",  text)
+    text = re.sub(r"  +", " ", text)
     # text = text.replace(" \n", "\n")
     if strip:
         text = text.strip()
@@ -125,12 +121,12 @@ def normalize_web_text(text: str, strip: bool = True) -> str:
 
 
 char_norm_dict = {
-    '\x80': "€",
-    '\x92': "'",
+    "\x80": "€",
+    "\x92": "'",
     "\x95": "•",
-    "\u00a0": " ",      # \xa0
+    "\u00a0": " ",  # \xa0
     "\u0096": "-",
-    "\u00ad": "-",      # \xad
+    "\u00ad": "-",  # \xad
     "\u1680": "-",
     "\u180e": None,
     "\u2000": " ",
@@ -150,36 +146,38 @@ char_norm_dict = {
     "\u3000": " ",
     "\ufeff": None,
     # Fix ellipses
-    '…': '...',
+    "…": "...",
     # Normalize newlines
-    '\r': None,
+    "\r": None,
     # Quotes
-    '“': '"',
-    '”': '"',
-    '': '"',
-    '': '"',
-    '': "'",
-    '‘': "'",
-    '’': "'",
-    '´': "'",
+    "“": '"',
+    "”": '"',
+    "": '"',
+    "": '"',
+    "": "'",
+    "‘": "'",
+    "’": "'",
+    "´": "'",
     # Dashes
     "": "—",
-    '–': '-',
-    '‐': '-',
+    "–": "-",
+    "‐": "-",
     # Footnotes
-    '⁽': '(',
-    '⁾': ')',
-    '¹': '1',
+    "⁽": "(",
+    "⁾": ")",
+    "¹": "1",
     # '²': '2',
-    '³': '3',
-    '⁄': '/',
+    "³": "3",
+    "⁄": "/",
     # Remove TM, etc
-    '™': None,
-    '℠': None,
-    '®': None,
-    '©': None,
+    "™": None,
+    "℠": None,
+    "®": None,
+    "©": None,
 }
 ord_char_norm_dict = {ord(k): v for k, v in char_norm_dict.items()}
+
+
 def normalize_chars(text: str) -> str:
     # Normalize bad characters
     text = text.translate(ord_char_norm_dict)
@@ -190,9 +188,9 @@ def normalize_chars(text: str) -> str:
     return text
 
 
-def strip_insignificant_text_lines(text: str,
-                                   bad_needles: Optional[List[str]] = None
-                                   ) -> str:
+def strip_insignificant_text_lines(
+    text: str, bad_needles: Optional[List[str]] = None
+) -> str:
     """
     Strip out short lines and lines with few letters.
     Optionally, also strip out short lines that contain one or more
@@ -220,8 +218,12 @@ def strip_insignificant_text_lines(text: str,
 
         # Lines with too few words that contain bad terms, if needed
         line = line.strip()
-        words = line.split(' ')
-        if len(words) < 11 and bad_needles and any(s in line.lower() for s in bad_needles):
+        words = line.split(" ")
+        if (
+            len(words) < 11
+            and bad_needles
+            and any(s in line.lower() for s in bad_needles)
+        ):
             continue
 
         # Not a bad line - append it to the list
@@ -232,18 +234,22 @@ def strip_insignificant_text_lines(text: str,
 
 # NOTE: "{" and "}" are special characters, used for document tagging
 SPECIAL_CHARS = ("{", "}")
-QUOTE_CHARS = ("\"", "”", "'", "’", "")
+QUOTE_CHARS = ('"', "”", "'", "’", "")
 NORMAL_END_CHARS = (".", ":", ";", "?", "!")
 END_CHARS = NORMAL_END_CHARS + SPECIAL_CHARS + QUOTE_CHARS
 CONSERVATIVE_END_CHARS = END_CHARS + (":", "☐", "☒")
 CURRENCIES = ("$", "€", "¥", "£")
-def clean_multi_page_report(page_texts: List[str],
-                            remove_bad_lines: bool = True,
-                            skip_short_sentence_pages: bool = False,
-                            merge_consecutive_cover_page_lines: bool = True,
-                            allowable_headers: Optional[List[str]] = None,
-                            aggressive_headers: bool = True,
-                            remove_short_lines_with: Optional[List[str]] = None):
+
+
+def clean_multi_page_report(
+    page_texts: List[str],
+    remove_bad_lines: bool = True,
+    skip_short_sentence_pages: bool = False,
+    merge_consecutive_cover_page_lines: bool = True,
+    allowable_headers: Optional[List[str]] = None,
+    aggressive_headers: bool = True,
+    remove_short_lines_with: Optional[List[str]] = None,
+):
     no_allowable_headers = not isinstance(allowable_headers, list)
     allowable_headers = allowable_headers or []
     remove_short_lines_with = remove_short_lines_with or []
@@ -267,7 +273,9 @@ def clean_multi_page_report(page_texts: List[str],
     # Then remove bad lines if necessary
     if remove_bad_lines:
         for i, lines in enumerate(lines_by_page):
-            page_no_strs = [str(pd + i) for pd in range(-1, 1) if 0 <= pd + i <= len(lines_by_page)]
+            page_no_strs = [
+                str(pd + i) for pd in range(-1, 1) if 0 <= pd + i <= len(lines_by_page)
+            ]
             # Handle short lines
             cleaned_lines = []
             for j, line in enumerate(lines):
@@ -282,8 +290,13 @@ def clean_multi_page_report(page_texts: List[str],
                 if len(line) <= 8 and line[0] not in ("•", "{"):
                     continue
                 # Remove short lines that end in number or % or start with currency
-                if len(line) <= 25 and (line[-1].isdigit() or line[-1] in ("%",) or line[0] in CURRENCIES) \
-                        and not line.startswith("Item "):
+                if (
+                    len(line) <= 25
+                    and (
+                        line[-1].isdigit() or line[-1] in ("%",) or line[0] in CURRENCIES
+                    )
+                    and not line.startswith("Item ")
+                ):
                     continue
                 # Remove short lines that are just parentheticals
                 if len(line) <= 25 and line[0] == "(" and line[-1] == ")":
@@ -299,12 +312,16 @@ def clean_multi_page_report(page_texts: List[str],
                 #                 line = line[:-len(page_no_str_ex)]
                 # Check for short lines with mostly capitals - these could be section headers,
                 # so wrap in newlines just in case
-                if len(line) <= max_line_chars_header and \
-                        line[0].isupper() and \
-                        line[-1] not in (".", ",") and \
-                        (". " not in line or line[:4] in ("Item", "Sect", "Part")) and \
-                        (sum(map(str.isupper, line)) / len(line) >= 0.5 or
-                         (aggressive_headers and line[-1] not in END_CHARS)):
+                if (
+                    len(line) <= max_line_chars_header
+                    and line[0].isupper()
+                    and line[-1] not in (".", ",")
+                    and (". " not in line or line[:4] in ("Item", "Sect", "Part"))
+                    and (
+                        sum(map(str.isupper, line)) / len(line) >= 0.5
+                        or (aggressive_headers and line[-1] not in END_CHARS)
+                    )
+                ):
                     line = "\n" + line + "\n"
                 # Fix bad checkboxes
                 # TODO: is this the right place
@@ -328,18 +345,28 @@ def clean_multi_page_report(page_texts: List[str],
         # NOTE: must ensure that the header and footer do not overlap, so are only within
         #       the top/bottom HALF
         # NOTE: trim lines by a few chars if they are very long
-        possible_header_lines = [p[i] for p in non_empty_lines_by_page for i in possible_header_line_indices
-                                 if 2 * i < len(p) and -2 * i <= len(p) and p[i]
-                                 and (no_allowable_headers or p[i] not in allowable_headers)]
+        possible_header_lines = [
+            p[i]
+            for p in non_empty_lines_by_page
+            for i in possible_header_line_indices
+            if 2 * i < len(p)
+            and -2 * i <= len(p)
+            and p[i]
+            and (no_allowable_headers or p[i] not in allowable_headers)
+        ]
         counter = Counter(possible_header_lines)
-        header_lines = set(ln for ln, cnt in counter.items()
-                           if ln and (
-                                   (cnt >= 3 and len(ln) >= 100) or
-                                   (cnt >= 4 and len(ln) < 100)
-                           ))
+        header_lines = set(
+            ln
+            for ln, cnt in counter.items()
+            if ln and ((cnt >= 3 and len(ln) >= 100) or (cnt >= 4 and len(ln) < 100))
+        )
         # Very short repeating lines
-        short_lines = [ln for p in non_empty_lines_by_page for ln in p
-                       if len(ln) <= 50 and (no_allowable_headers or ln not in allowable_headers)]
+        short_lines = [
+            ln
+            for p in non_empty_lines_by_page
+            for ln in p
+            if len(ln) <= 50 and (no_allowable_headers or ln not in allowable_headers)
+        ]
         counter = Counter(short_lines)
         short_repeating_lines = set(ln for ln, cnt in counter.items() if cnt >= 3)
 
@@ -362,9 +389,11 @@ def clean_multi_page_report(page_texts: List[str],
             # (4) Line contains a specific sentence end (i.e. ". ")
             if i > 0 and line[0].islower():
                 prev_line = lines[i - 1]
-                if prev_line[-1] not in CONSERVATIVE_END_CHARS \
-                        and len(prev_line) > 60 \
-                        and (line[-1] == "." or ". " in line):
+                if (
+                    prev_line[-1] not in CONSERVATIVE_END_CHARS
+                    and len(prev_line) > 60
+                    and (line[-1] == "." or ". " in line)
+                ):
                     count_sentence_splits += 1
                     if count_sentence_splits >= 3:
                         sentences_need_merging = True
@@ -387,7 +416,11 @@ def clean_multi_page_report(page_texts: List[str],
             skip = True
 
         # Skip pages that are almost entirely lots of short headers/phrases
-        if skip_short_sentence_pages and len(lines) > 6 and sum(len(ln) <= 80 for ln in lines) / len(lines) >= 0.9:
+        if (
+            skip_short_sentence_pages
+            and len(lines) > 6
+            and sum(len(ln) <= 80 for ln in lines) / len(lines) >= 0.9
+        ):
             skip = True
 
         # If skipping, add some padding space and reset the "previous page"
@@ -406,7 +439,9 @@ def clean_multi_page_report(page_texts: List[str],
 
         # Removals (1): Remove page headers/footers
         if remove_bad_lines:
-            possible_page_numbers = [str(n) for n in range(max(page_no - 4, 0), page_no + 5)]
+            possible_page_numbers = [
+                str(n) for n in range(max(page_no - 4, 0), page_no + 5)
+            ]
             for j in possible_header_line_indices:
                 # Not enough lines to check for the jth header
                 if j >= len(lines) or -j > len(lines):
@@ -415,8 +450,11 @@ def clean_multi_page_report(page_texts: List[str],
                 # Remove numbers or lines that start/end with the page number
                 # NOTE: this is in addition to page number removal earlier
                 if len(line) < 40 and any(
-                        line.isdigit() or line.startswith(f"{n} ") or line.endswith(f" {n}" or f"{n} of " in line)
-                        for n in possible_page_numbers):
+                    line.isdigit()
+                    or line.startswith(f"{n} ")
+                    or line.endswith(f" {n}" or f"{n} of " in line)
+                    for n in possible_page_numbers
+                ):
                     lines[j] = ""
                 # Remove common headers/footers
                 elif line in header_lines:
@@ -435,7 +473,9 @@ def clean_multi_page_report(page_texts: List[str],
                     continue
                 num_words = line.count(" ")
                 line_lower = line.lower()
-                if num_words <= 2 and any(s in line_lower for s in remove_short_lines_with):
+                if num_words <= 2 and any(
+                    s in line_lower for s in remove_short_lines_with
+                ):
                     lines[j] = ""
 
         # Debug
@@ -449,8 +489,14 @@ def clean_multi_page_report(page_texts: List[str],
         # NOTE 2: allow newlines in between
         if merge_consecutive_cover_page_lines and page_no == 1 and good_lines:
             # Find first line that is NOT uppercase, i.e. the extent of the merge
-            line_index_after_all_caps = next((j for j, ln in enumerate(good_lines)
-                                              if (not ln.isupper() or "{" in ln) and j <= 12), 12)
+            line_index_after_all_caps = next(
+                (
+                    j
+                    for j, ln in enumerate(good_lines)
+                    if (not ln.isupper() or "{" in ln) and j <= 12
+                ),
+                12,
+            )
             if line_index_after_all_caps:
                 if line_index_after_all_caps > len(good_lines):
                     line_index_after_all_caps = len(good_lines)
@@ -478,8 +524,12 @@ def clean_multi_page_report(page_texts: List[str],
             #       we earlier added "\n" before and after
             elif prev_page_last_char and prev_page_last_char == "\n":
                 final_text += "\n"
-            elif prev_page_last_char and prev_page_last_char not in CONSERVATIVE_END_CHARS and \
-                    (page_no >= 3 or len(prev_page_lines) > 5) and not (good_lines and good_lines[0].isupper()):
+            elif (
+                prev_page_last_char
+                and prev_page_last_char not in CONSERVATIVE_END_CHARS
+                and (page_no >= 3 or len(prev_page_lines) > 5)
+                and not (good_lines and good_lines[0].isupper())
+            ):
                 final_text += " "
             else:
                 final_text += "\n\n"
@@ -487,19 +537,34 @@ def clean_multi_page_report(page_texts: List[str],
 
         # Merge lines depending on whether sentences have been split
         if sentences_need_merging:
-            lines_with_separators = [("" if k == 0 else
-                                      (" " if ln and not ln.isupper() and
-                                              # ln[0].islower() and
-                                              good_lines[k - 1] and
-                                              # Last chars not END_CHARS, unless QUOTE
-                                              good_lines[k - 1][-1] not in NORMAL_END_CHARS and
-                                              (good_lines[k - 1][-1] not in QUOTE_CHARS or
-                                               good_lines[k - 1][-2] not in NORMAL_END_CHARS) and
-                                              # Prev line long enough, checking for long words on following line
-                                              (len(good_lines[k - 1]) > min_line_chars or
-                                               len(good_lines[k - 1]) + ln[:30].find(" ") > min_line_chars + 6)
-                                       else "\n")
-                                      ) + ln for k, ln in enumerate(good_lines)]
+            lines_with_separators = [
+                (
+                    ""
+                    if k == 0
+                    else (
+                        " "
+                        if ln and not ln.isupper() and
+                        # ln[0].islower() and
+                        good_lines[k - 1] and
+                        # Last chars not END_CHARS, unless QUOTE
+                        good_lines[k - 1][-1] not in NORMAL_END_CHARS
+                        and (
+                            good_lines[k - 1][-1] not in QUOTE_CHARS
+                            or good_lines[k - 1][-2] not in NORMAL_END_CHARS
+                        )
+                        and
+                        # Prev line long enough, checking for long words on following line
+                        (
+                            len(good_lines[k - 1]) > min_line_chars
+                            or len(good_lines[k - 1]) + ln[:30].find(" ")
+                            > min_line_chars + 6
+                        )
+                        else "\n"
+                    )
+                )
+                + ln
+                for k, ln in enumerate(good_lines)
+            ]
             page_text = "".join(lines_with_separators)
         else:
             page_text = "\n".join(good_lines)
@@ -529,19 +594,21 @@ def is_capitalized_phrase(phrase):
     Check if every word starts with a capital letter.
     Proxy for being a named entity (in addition to the other named entity recognition stuff.
     """
-    return is_capitalized_word_list(phrase.split(' '))
+    return is_capitalized_word_list(phrase.split(" "))
 
 
 def is_quote(char):
-    if char == '\'' or char == '"' or char == '’' or char == '”' or char == '“':
+    if char == "'" or char == '"' or char == "’" or char == "”" or char == "“":
         return True
     return False
 
 
 def is_cjk(char):
-    return "\uac00" <= char <= "\ud7a3" or \
-           "\u3040" <= char <= "\u30ff" or \
-           "\u4e00" <= char <= "\u9FFF"
+    return (
+        "\uac00" <= char <= "\ud7a3"
+        or "\u3040" <= char <= "\u30ff"
+        or "\u4e00" <= char <= "\u9fff"
+    )
 
 
 def cjk_detect(text):
@@ -553,7 +620,7 @@ def cjk_detect(text):
     if re.search("[\u3040-\u30ff]", text):
         return "ja"
     # Chinese
-    if re.search("[\u4e00-\u9FFF]", text):
+    if re.search("[\u4e00-\u9fff]", text):
         return "zh"
     return None
 
@@ -579,7 +646,9 @@ def sentence_similarity(one, two):
 
 def camel_case_split(identifier):
     """From https://stackoverflow.com/a/29920015"""
-    matches = re.finditer(".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", identifier)
+    matches = re.finditer(
+        ".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", identifier
+    )
     return [m.group(0) for m in matches]
 
 
@@ -594,7 +663,9 @@ def split_iter_para_bracket(text):
 def split_iter_line_with_min(text, min_length):
     start = 0
     while start < len(text):
-        end = text.find("\n", start + min_length) + 1       # returns -1 if not found, so end + 1 == 0
+        end = (
+            text.find("\n", start + min_length) + 1
+        )  # returns -1 if not found, so end + 1 == 0
         if end == 0:
             end = len(text)
         yield text[start:end]
@@ -602,7 +673,7 @@ def split_iter_line_with_min(text, min_length):
 
 
 def word_count(thestring):
-    return len(thestring.split(' '))
+    return len(thestring.split(" "))
 
 
 def get_lang_if_not_english(url):
@@ -612,7 +683,17 @@ def get_lang_if_not_english(url):
     :return:
     """
     non_english_codes = [
-        "es", "ja", "zh", "zh-CN", "zh-HK", "nl", "pt", "it", "fr", "de", "ko"
+        "es",
+        "ja",
+        "zh",
+        "zh-CN",
+        "zh-HK",
+        "nl",
+        "pt",
+        "it",
+        "fr",
+        "de",
+        "ko",
     ]
 
     # Search URL for the codwes
@@ -696,7 +777,7 @@ def build_set_with_without_hyphens(words):
 
 # TODO: check this logic
 def uncapitalize_start_of_sentence(text):
-    if text[0].isupper() and not text[1].isupper() and text[1] != '.':
+    if text[0].isupper() and not text[1].isupper() and text[1] != ".":
         return text[0].lower() + text[1:]
     elif is_quote(text[0]) and text[1].isupper():
         return text[0] + text[1].lower() + text[2:]
@@ -704,8 +785,11 @@ def uncapitalize_start_of_sentence(text):
 
 
 def experiments():
-    """Conclusion - use text.translate() and text.replace()! """
-    random_strings = [''.join(random.choices(string.ascii_lowercase + " -", k=20000)) for i in range(1000)]
+    """Conclusion - use text.translate() and text.replace()!"""
+    random_strings = [
+        "".join(random.choices(string.ascii_lowercase + " -", k=20000))
+        for i in range(1000)
+    ]
     # random_strings_as_lists = [list(s) for s in random_strings]
     replace_count = 1
     orig = random.choices(string.ascii_uppercase, k=replace_count)
@@ -714,6 +798,7 @@ def experiments():
     repl_dict = {o: repl[i] for i, o in enumerate(orig)}
     repl_func = make_multiple_replace_func(repl_dict)
     import time
+
     now = time.time()
     for i, o in enumerate(orig):
         new_1 = [s.replace(o, repl[i]) for s in random_strings]
