@@ -14,7 +14,7 @@ def schema_to_default_dict(schema: dict):
             "hobbies": {"type": "array", "items": {"type": "string"}}
         }
     }
-    
+
     Output: {'name': None, 'age': 18, 'hobbies': []}
     """
     result = {}
@@ -25,6 +25,8 @@ def schema_to_default_dict(schema: dict):
             result[key] = []
         elif value["type"] == "object":
             result[key] = {}
+        elif value["type"] == "string":
+            result[key] = ""
         else:
             result[key] = None
     return result
