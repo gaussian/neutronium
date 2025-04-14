@@ -26,7 +26,7 @@ def precomputed_batch(iterable: Iterable, batch_size):
     if isinstance(iterable, list) or isinstance(iterable, str):
         num_items = len(iterable)
         for ndx in range(0, num_items, batch_size):
-            yield iterable[ndx:min(ndx + batch_size, num_items)]
+            yield iterable[ndx : min(ndx + batch_size, num_items)]
     else:
         raise ValueError(f"Bad iterable type: {type(iterable)}, try `list` or `str`")
 
@@ -198,3 +198,17 @@ def str_split_multi(text: str, substrings: Iterable[str]):
     for substring in substrings:
         text_chunks = chain(*[chunk.split(substring) for chunk in text_chunks])
     return text_chunks
+
+
+def deep_equals(d1, d2):
+    if d1 == d2:
+        return True
+    if isinstance(d1, dict) and isinstance(d2, dict):
+        if d1.keys() != d2.keys():
+            return False
+        return all(deep_equals(d1[k], d2[k]) for k in d1)
+    if isinstance(d1, list) and isinstance(d2, list):
+        if len(d1) != len(d2):
+            return False
+        return all(deep_equals(i, j) for i, j in zip(d1, d2))
+    return False
