@@ -10,7 +10,7 @@ class RequestUtilsTestCase(unittest.TestCase):
     def setUpTestData(cls):
         pass
 
-    @tag("fast", "infrastructure")
+    @tag("slow", "infrastructure")
     def test_can_optimize_url(self):
         data = [
             # TODO: no longer works, as NYT thinks we've blocked Javascript/ads
