@@ -1,4 +1,5 @@
 import datetime
+from typing import Optional
 
 from zoneinfo import ZoneInfo
 
@@ -50,7 +51,7 @@ def get_day_start(date):
 #     return separate_ints_from_texts(texts, acceptable_range=(100, 2100))
 
 
-def localize_to_utc(date):
+def localize_to_utc(date: Optional[datetime.datetime]) -> Optional[datetime.datetime]:
 
     # If date exists
     if date:
