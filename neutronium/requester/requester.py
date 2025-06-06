@@ -13,13 +13,21 @@ from neutron.utils.text import normalize_chars
 from neutron.utils.logging import log_third_party_error, log_sys_exception
 from neutron.utils.url import canonize_url, rebuild_url, parse_url
 
+try:
+    import requests_cache
+except ImportError:
+    requests_cache = None
+
 
 class Requester:
-    def __init__(self, timeout: int = 30,
-                 log_context: str = "N/A",
-                 session: requests.Session = None,
-                 requests_cache: Optional[str] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        timeout: int = 30,
+        log_context: str = "N/A",
+        session: Optional[requests.Session] = None,
+        requests_cache_key: Optional[str] = None,
+        **kwargs,
+    ):
 
         self.timeout = timeout
         self.log_context = log_context
@@ -34,12 +42,9 @@ class Requester:
         self.requests_session = session
 
         # Otherwise create session, cached or normal
-        if not self.requests_session and requests_cache:
-            try:
-                from requests_cache import CachedSession
-                self.requests_session = CachedSession(requests_cache)
-            except ImportError:
-                pass
+        if not self.requests_session:
+            if requests_cache and requests_cache_key:
+                self.requests_session = requests_cache.CachedSession(requests_cache_key)
         if not self.requests_session:
             self.requests_session = requests.Session()
 
@@ -50,10 +55,12 @@ class Requester:
         if not self._do_not_close_session:
             self.requests_session.close()
 
-    def get(self, url: str,
-            existing_response: Optional[requests.Response] = None,
-            referer: str = None
-            ) -> (str, bytes, str, str, int, Optional[str]):
+    def get(
+        self,
+        url: str,
+        existing_response: Optional[requests.Response] = None,
+        referer: Optional[str] = None,
+    ) -> tuple[str, bytes, str, str, int, Optional[str]]:
 
         # Get response (connection still open, content NOT consumed)
         original_url = url
@@ -61,7 +68,7 @@ class Requester:
             url=original_url,
             existing_response=existing_response,
             allow_retry=False,
-            referer=referer
+            referer=referer,
         )
 
         # Wrapper to catch content consumption errors and close connection
@@ -92,19 +99,33 @@ class Requester:
                         url=optimized_url,
                         existing_response=existing_response,
                         allow_retry=False,
-                        referer=referer
+                        referer=referer,
                     )
-                    optimized_url, _, opt_content_length = self._get_response_meta(opt_open_response)
+                    optimized_url, _, opt_content_length = self._get_response_meta(
+                        opt_open_response
+                    )
                     # Both URLs have the same response content length - we can assume they are the same
-                    if optimized_url and opt_success and opt_content_length == content_length:
+                    if (
+                        optimized_url
+                        and opt_success
+                        and opt_content_length == content_length
+                    ):
                         if self.verbose:
-                            print(f"URL optimization SUCCESS: {optimized_url} (old = {new_url})")
+                            print(
+                                f"URL optimization SUCCESS: {optimized_url} (old = {new_url})"
+                            )
                         invalid_response = open_response
-                        new_url, open_response, success = optimized_url, opt_open_response, opt_success
+                        new_url, open_response, success = (
+                            optimized_url,
+                            opt_open_response,
+                            opt_success,
+                        )
                     # Failed to optimize
                     else:
                         if self.verbose:
-                            print(f"URL optimization FAIL: {optimized_url} (old = {new_url})")
+                            print(
+                                f"URL optimization FAIL: {optimized_url} (old = {new_url})"
+                            )
                         invalid_response = opt_open_response
                     # Close whichever response we are no longer using
                     if invalid_response:
@@ -122,8 +143,10 @@ class Requester:
 
                 # If encoding type is not guessed to be UTF-8, evaluate the "apparent encoding"
                 # using chardet (via open_response.apparent_encoding)
-                if isinstance(open_response.encoding, str) and \
-                        open_response.encoding.lower().replace("-", "") != "utf8":
+                if (
+                    isinstance(open_response.encoding, str)
+                    and open_response.encoding.lower().replace("-", "") != "utf8"
+                ):
                     open_response.encoding = open_response.apparent_encoding
 
                 # Pull content, simple normalization
@@ -135,7 +158,10 @@ class Requester:
                 content_length = content_length or len(content)
 
                 # Quickly see if we can pull a canonical URL out of the text
-                new_url = self.get_canonical_link_from_html(text, current_url=new_url) or new_url
+                new_url = (
+                    self.get_canonical_link_from_html(text, current_url=new_url)
+                    or new_url
+                )
 
                 # Quickly check text if this is a "no index" page
                 if self.is_no_index_html(text):
@@ -155,7 +181,9 @@ class Requester:
             #         text = normalize_chars(text)
             #     except requests.exceptions.RequestException as e:
             #         pass
-            log_third_party_error(f"Content consumption failed for {original_url}, exception = {e} ({e.strerror})")
+            log_third_party_error(
+                f"Content consumption failed for {original_url}, exception = {e} ({e.strerror})"
+            )
             if open_response:
                 open_response.close()
             return None, None, new_url or original_url, None, 0, "content"
@@ -165,17 +193,19 @@ class Requester:
             if open_response:
                 open_response.close()
 
-    def _get_open_with_retry(self, url: str,
-                             allow_retry: bool,
-                             use_user_agent: bool = True,
-                             existing_response: Optional[requests.Response] = None,
-                             referer: str = None
-                             ) -> (requests.Response, bool):
+    def _get_open_with_retry(
+        self,
+        url: str,
+        allow_retry: bool,
+        use_user_agent: bool = True,
+        existing_response: Optional[requests.Response] = None,
+        referer: Optional[str] = None,
+    ) -> tuple[requests.Response, bool]:
 
         # Shorthand for retrying this function with user agent
-        def close_and_retry_if_have_not_yet(old_response: requests.Response,
-                                            new_url: Optional[str] = None
-                                            ) -> (requests.Response, bool):
+        def close_and_retry_if_have_not_yet(
+            old_response: requests.Response, new_url: Optional[str] = None
+        ) -> tuple[requests.Response, bool]:
 
             # Close the old response first
             if old_response:
@@ -188,7 +218,9 @@ class Requester:
             if allow_retry:
                 time.sleep(1)
                 print(f"Retrying: {url}")
-                return self._get_open_with_retry(url=new_url, allow_retry=False, use_user_agent=True, referer=referer)
+                return self._get_open_with_retry(
+                    url=new_url, allow_retry=False, use_user_agent=True, referer=referer
+                )
 
             # Otherwise failed
             return None, False
@@ -217,10 +249,7 @@ class Requester:
                 if url.startswith("//"):
                     url = "http:" + url
                 response = self.requests_session.get(
-                    url=url,
-                    timeout=self.timeout,
-                    stream=True,
-                    **extra_kwargs
+                    url, timeout=self.timeout, stream=True, **extra_kwargs
                 )
 
             # If we get a 403 or 405, try again with the User Agent if we haven't yet
@@ -264,7 +293,9 @@ class Requester:
         # TODO: is termination the right call? what if we get stuck in a loop downloading
         #       a file that won't fit in memory?
         except MemoryError as e:
-            error_message = f"Memory error downloading {url} ({self.log_context}), detail: {e}"
+            error_message = (
+                f"Memory error downloading {url} ({self.log_context}), detail: {e}"
+            )
             log_sys_exception(error_message)
             if self.is_celery_worker:
                 raise WorkerTerminate(error_message)
@@ -281,7 +312,9 @@ class Requester:
         except requests.exceptions.Timeout as e:
             response, success = close_and_retry_if_have_not_yet(response)
             if not success:
-                error_message = f"Timed out downloading {url} ({self.log_context}), detail: {e}"
+                error_message = (
+                    f"Timed out downloading {url} ({self.log_context}), detail: {e}"
+                )
                 print_error = True
 
         # SSL error, try with non-HTTPS if possible
@@ -289,11 +322,15 @@ class Requester:
             if url.startswith("https:"):
                 non_ssl_url = url.replace("https:", "http:")
                 allow_retry = True  # Allow retrying even if we've disabled it
-                response, success = close_and_retry_if_have_not_yet(response, new_url=non_ssl_url)
+                response, success = close_and_retry_if_have_not_yet(
+                    response, new_url=non_ssl_url
+                )
             else:
                 success = False
             if not success:
-                error_message = f"SSL error while downloading {url} ({self.log_context}), detail: {e}"
+                error_message = (
+                    f"SSL error while downloading {url} ({self.log_context}), detail: {e}"
+                )
                 log_error = True
 
         # Some connection error (retry)
@@ -306,14 +343,18 @@ class Requester:
         # Other request error (don't retry)
         except requests.exceptions.RequestException as e:
             success = False
-            error_message = f"Other request error downloading {url} ({self.log_context}), detail: {e}"
+            error_message = (
+                f"Other request error downloading {url} ({self.log_context}), detail: {e}"
+            )
             log_error = True
             allow_retry = True  # need this to log error without recursing
 
         # Some IDNA error
         except idna.core.IDNAError as e:
             success = False
-            error_message = f"IDNA error downloading {url} ({self.log_context}), detail: {e}"
+            error_message = (
+                f"IDNA error downloading {url} ({self.log_context}), detail: {e}"
+            )
             log_error = True
             allow_retry = True  # need this to log error without recursing
 
@@ -368,7 +409,11 @@ class Requester:
         Return the pre-wall link, or None if there was no wall.
         """
 
-        if response and len(response.history) and not response.history[-1].is_permanent_redirect:
+        if (
+            response
+            and len(response.history)
+            and not response.history[-1].is_permanent_redirect
+        ):
             url_pre = response.history[-1].url
             url_obj_pre = parse_url(url_pre)
             url_obj_post = parse_url(new_url)
@@ -376,9 +421,14 @@ class Requester:
             slash_count_post = url_obj_post.path.count("/")
             if "barrier=" in url_obj_post.query:
                 return url_pre
-            if slash_count_post <= 2 and slash_count_pre >= slash_count_post + 2 and \
-                    (len(url_obj_post.query) >= len(url_obj_pre.query) + 10 or
-                     any(f in url_obj_post.query for f in ("url=", "redirect"))):
+            if (
+                slash_count_post <= 2
+                and slash_count_pre >= slash_count_post + 2
+                and (
+                    len(url_obj_post.query) >= len(url_obj_pre.query) + 10
+                    or any(f in url_obj_post.query for f in ("url=", "redirect"))
+                )
+            ):
                 return url_pre
 
         return None
@@ -412,10 +462,10 @@ class Requester:
             return None
 
         # Canonical link
-        url = find_url("rel=\"canonical\"", "href")
+        url = find_url('rel="canonical"', "href")
 
         # OG URL (if failed above)
-        url = url or find_url("property=\"og:url\"", "content")
+        url = url or find_url('property="og:url"', "content")
 
         return url
 
@@ -436,7 +486,7 @@ class Requester:
             return False
 
         bad_fragments = (
-            "content=\"noindex\"",
-            "content=\"all\"",
+            'content="noindex"',
+            'content="all"',
         )
         return any(f in html for f in bad_fragments)
