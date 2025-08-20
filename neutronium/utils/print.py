@@ -17,6 +17,8 @@ def truncate_strings(obj, max_len):
         return [truncate_strings(item, max_len) for item in obj]
     if isinstance(obj, tuple):
         return tuple(truncate_strings(item, max_len) for item in obj)
+    if obj is None or isinstance(obj, (float, int, bool)):
+        return obj
     # Fallback for other types
     s = str(obj)
     return s if len(s) <= max_len else s[:max_len] + "..."
