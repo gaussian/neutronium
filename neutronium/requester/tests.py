@@ -10,6 +10,7 @@ class RequestUtilsTestCase(unittest.TestCase):
     def setUpTestData(cls):
         pass
 
+    @unittest.skip("This test is horrible and is brittle to remote changes")
     @tag("slow", "infrastructure")
     def test_can_optimize_url(self):
         data = [
