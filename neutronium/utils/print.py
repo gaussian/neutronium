@@ -20,7 +20,10 @@ def truncate_strings(obj, max_len):
     if obj is None or isinstance(obj, (float, int, bool)):
         return obj
     # Fallback for other types
-    s = str(obj)
+    try:
+        s = str(obj)
+    except Exception:
+        s = "<error stringifying>"
     return s if len(s) <= max_len else s[:max_len] + "..."
 
 
