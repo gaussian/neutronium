@@ -1,8 +1,6 @@
 import lxml.html
 import lxml.etree
 
-from neutron.utils.logging import log_sys_exception
-
 
 def get_xml_obj_from_html(html):
     # Empty or missing
