@@ -11,7 +11,6 @@ from celery.exceptions import WorkerTerminate
 from requests.structures import CaseInsensitiveDict
 
 from neutron.utils.text import normalize_chars
-from neutron.utils.logging import log_third_party_error
 from neutron.utils.url import canonize_url, rebuild_url, parse_url
 
 try:
@@ -21,6 +20,7 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
+third_party_logger = logging.getLogger('third-party')
 
 
 class Requester:
@@ -185,7 +185,7 @@ class Requester:
             #         text = normalize_chars(text)
             #     except requests.exceptions.RequestException as e:
             #         pass
-            log_third_party_error(
+            third_party_logger.error(
                 f"Content consumption failed for {original_url}, exception = {e} ({e.strerror})"
             )
             if open_response:
@@ -374,7 +374,7 @@ class Requester:
             if print_error and error_message and allow_retry:
                 print(error_message)
             if log_error and error_message and allow_retry:
-                log_third_party_error(error_message)
+                third_party_logger.error(error_message)
             if self.raise_validation_error:
                 raise ValidationError(error_message)
 
