@@ -1,4 +1,5 @@
 import re
+import logging
 import time
 from typing import Optional
 
@@ -9,13 +10,15 @@ from celery.exceptions import WorkerTerminate
 from requests.structures import CaseInsensitiveDict
 
 from neutron.utils.text import normalize_chars
-from neutron.utils.logging import log_third_party_error, log_sys_exception
 from neutron.utils.url import canonize_url, rebuild_url, parse_url
 
 try:
     import requests_cache
 except ImportError:
     requests_cache = None
+
+
+logger = logging.getLogger(__name__)
 
 
 class Requester:
@@ -184,7 +187,7 @@ class Requester:
             #         text = normalize_chars(text)
             #     except requests.exceptions.RequestException as e:
             #         pass
-            log_third_party_error(
+            logger.error(
                 f"Content consumption failed for {original_url}, exception = {e} ({e.strerror})"
             )
             if open_response:
@@ -299,7 +302,7 @@ class Requester:
             error_message = (
                 f"Memory error downloading {url} ({self.log_context}), detail: {e}"
             )
-            log_sys_exception(error_message)
+            logger.exception(error_message)
             if self.is_celery_worker:
                 raise WorkerTerminate(error_message)
             raise
@@ -373,7 +376,7 @@ class Requester:
             if print_error and error_message and allow_retry:
                 print(error_message)
             if log_error and error_message and allow_retry:
-                log_third_party_error(error_message)
+                logger.error(error_message)
             if self.raise_validation_error:
                 raise ValidationError(error_message)
 
