@@ -6,7 +6,6 @@ from typing import Optional
 import idna
 import requests
 from django.core.exceptions import ValidationError
-from django.conf import settings
 from celery.exceptions import WorkerTerminate
 from requests.structures import CaseInsensitiveDict
 
@@ -29,11 +28,15 @@ class Requester:
         log_context: str = "N/A",
         session: Optional[requests.Session] = None,
         requests_cache_key: Optional[str] = None,
+        max_content_size: int = 10000000,
+        user_agent: str = "Requester Bot",
         **kwargs,
     ):
 
         self.timeout = timeout
         self.log_context = log_context
+        self.max_content_size = max_content_size
+        self.user_agent = user_agent
         self.try_optimize_url = kwargs.get("try_optimize_url", True)
         self.try_handle_paywall = kwargs.get("try_handle_paywall", True)
         self.raise_validation_error = kwargs.get("raise_validation_error", False)
@@ -245,7 +248,7 @@ class Requester:
             else:
                 extra_kwargs = {"headers": dict()}
                 if use_user_agent:
-                    extra_kwargs["headers"]["User-Agent"] = settings.BOT_USER_AGENT
+                    extra_kwargs["headers"]["User-Agent"] = self.user_agent
                 if referer:
                     extra_kwargs["headers"]["Referer"] = referer
                 # Add scheme if missing
@@ -276,7 +279,7 @@ class Requester:
                     # sure it isn't too big
                     # TODO: make this more general
                     content_length = int(response.headers.get("content-length", 0))
-                    if content_length > settings.MAX_REQUEST_CONTENT_SIZE:
+                    if content_length > self.max_content_size:
                         success = False
                         error_message = f"Content too big from {url} ({self.log_context}), size: {content_length}"
                         log_error = True
