@@ -25,6 +25,7 @@ class ContextFilter(logging.Filter):
         record.user_id = user_id_var.get()
         record.client_ip = client_ip_var.get()
         record.x_amzn_trace_id = x_amzn_trace_id_var.get()
+        record.enterprise_id = enterprise_id_var.get()
 
         # OTel / X-Ray context (trace_id, span_id, and friendly xray_trace_id)
         # Only import if available (optional dependency)
