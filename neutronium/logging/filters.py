@@ -1,17 +1,27 @@
 
 import logging
 
+try:
+    from opentelemetry import trace
+except ImportError:
+    trace = None  # OpenTelemetry not installed
+
 from .context import (
     request_id_var,
     user_id_var,
     client_ip_var,
-    x_amzn_trace_id_var,
+    enterprise_id_var,
 )
 
 
-def _hex_otel_id(value: int, width: int) -> str | None:
-    """Convert an OTel ID integer to hex string."""
-    return f"{value:0{width}x}" if value else None
+def _trace_id_hex(ctx) -> str:
+    """Convert an OTel trace ID integer to hex string."""
+    return format(ctx.trace_id, "032x")
+
+
+def _span_id_hex(ctx) -> str:
+    """Convert an OTel span ID integer to hex string."""
+    return format(ctx.span_id, "016x")
 
 
 class ContextFilter(logging.Filter):
@@ -24,32 +34,23 @@ class ContextFilter(logging.Filter):
         record.request_id = request_id_var.get()
         record.user_id = user_id_var.get()
         record.client_ip = client_ip_var.get()
-        record.x_amzn_trace_id = x_amzn_trace_id_var.get()
         record.enterprise_id = enterprise_id_var.get()
 
-        # OTel / X-Ray context (trace_id, span_id, and friendly xray_trace_id)
-        # Only import if available (optional dependency)
-        try:
-            from opentelemetry import trace
-
-            span = trace.get_current_span()
-            ctx = span.get_span_context() if span else None
-            if ctx and ctx.is_valid:
-                record.trace_id = _hex_otel_id(ctx.trace_id, 32)  # 32 hex chars
-                record.span_id = _hex_otel_id(ctx.span_id, 16)  # 16 hex chars
-                record.xray_trace_id = (
-                    f"1-{record.trace_id[:8]}-{record.trace_id[8:]}"
-                    if record.trace_id
-                    else None
-                )
+        # OTel / X-Ray context (trace_id, span_id)
+        if trace:
+            ctx = trace.get_current_span().get_span_context()
+            if ctx.is_valid:
+                record.trace_id = _trace_id_hex(ctx)
+                record.span_id = _span_id_hex(ctx)
+                record.trace_sampled = bool(ctx.trace_flags.sampled)
             else:
                 record.trace_id = None
                 record.span_id = None
-                record.xray_trace_id = None
-        except ImportError:
+                record.trace_sampled = None
+        else:
             # OpenTelemetry not installed, skip trace context
             record.trace_id = None
             record.span_id = None
-            record.xray_trace_id = None
+            record.trace_sampled = None
 
         return True
