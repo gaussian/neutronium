@@ -1,0 +1,51 @@
+
+import json
+import logging
+import os
+from datetime import datetime, timezone
+
+SERVICE_NAME = os.environ.get("OTEL_SERVICE_NAME")
+
+
+class JsonFormatter(logging.Formatter):
+    """JSON formatter with ordered fields and null value omission."""
+
+    # Maps record attribute names to JSON output field names
+    CONTEXT_FIELDS = {
+        "request_id": "request_id",
+        "client_ip": "client_ip",
+        "user_id": "user.id",
+        "enterprise_id": "enterprise.id",
+        "trace_id": "trace_id",
+        "span_id": "span_id",
+        "trace_sampled": "trace.sampled",
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        # Build payload with explicit field ordering
+        payload = {
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "logger": record.name,
+        }
+
+        if SERVICE_NAME:
+            payload["service.name"] = SERVICE_NAME
+
+        # Add context fields (injected by ContextFilter)
+        for attr, output_name in self.CONTEXT_FIELDS.items():
+            value = getattr(record, attr, None)
+            if value is not None:
+                payload[output_name] = value
+
+        return json.dumps(payload)
+
+
+class DevConsoleFormatter(logging.Formatter):
+    """Human-readable formatter for local development."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        return f"[{record.levelname}] {record.getMessage()} ({record.pathname}:{record.lineno})"
