@@ -1,9 +1,13 @@
 
+import logging
 from urllib.parse import urlparse, parse_qs, urljoin, urlencode, ParseResult
 from typing import Tuple, Any, Optional, List, Iterable, Set
 
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
+
+
+logger = logging.getLogger(__name__)
 
 BAD_QUERY_PARAMS = frozenset([
     "gclid", "mkt_tok", "sid", "atrkid", "goal", "_hsenc", "_hsmi", "__hssc", "__hstc", "hsCtaTracking",
@@ -69,7 +73,7 @@ def parse_url(url: str, correct_root: bool = True, **kwargs) -> Optional[ParseRe
     try:
         url_obj = urlparse(url, **kwargs)
     except ValueError:
-        print(f"Bad URL: {url}")
+        logger.warning(f"Bad URL: {url}")
         return None
 
     # (3) POST-PROCESS
