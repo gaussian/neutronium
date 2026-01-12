@@ -27,6 +27,15 @@ class JsonFormatter(logging.Formatter):
         "trace_id": "trace_id",
         "span_id": "span_id",
         "trace_sampled": "trace.sampled",
+        # HTTP request fields from AccessLogMiddleware
+        "http.method": "http.method",
+        "http.path": "http.path",
+        "http.route": "http.route",
+        "http.status_code": "http.status_code",
+        "http.user_agent": "http.user_agent",
+        "duration_ms": "duration_ms",
+        "user.is_privileged": "user.is_privileged",
+        "django.view": "django.view",
     }
 
     def format(self, record: logging.LogRecord) -> str:
