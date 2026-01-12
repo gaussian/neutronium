@@ -3,8 +3,16 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+from uuid import UUID
 
 SERVICE_NAME = os.environ.get("OTEL_SERVICE_NAME")
+
+
+def _json_default(obj):
+    """Handle JSON serialization of non-standard types."""
+    if isinstance(obj, UUID):
+        return str(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
 class JsonFormatter(logging.Formatter):
@@ -41,7 +49,7 @@ class JsonFormatter(logging.Formatter):
             if value is not None:
                 payload[output_name] = value
 
-        return json.dumps(payload)
+        return json.dumps(payload, default=_json_default)
 
 
 class DevConsoleFormatter(logging.Formatter):
