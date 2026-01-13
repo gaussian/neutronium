@@ -58,6 +58,19 @@ class JsonFormatter(logging.Formatter):
             if value is not None:
                 payload[output_name] = value
 
+        # Include structured exception info if present
+        if record.exc_info:
+            exc_type, exc_value, _ = record.exc_info
+            if exc_type is not None:
+                payload["error.type"] = exc_type.__name__
+            if exc_value is not None:
+                payload["error.message"] = str(exc_value)
+            payload["error.stack_trace"] = self.formatException(record.exc_info)
+
+        # Include stack_info if requested (e.g., logger.info("msg", stack_info=True))
+        if record.stack_info:
+            payload["stack_info"] = self.formatStack(record.stack_info)
+
         return json.dumps(payload, default=_json_default)
 
 
