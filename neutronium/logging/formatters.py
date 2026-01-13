@@ -44,7 +44,7 @@ class JsonFormatter(logging.Formatter):
             "timestamp": datetime.fromtimestamp(
                 record.created, tz=timezone.utc
             ).isoformat(),
-            "level": record.levelname,
+            "level": record.levelname.lower(),
             "message": record.getMessage(),
             "logger": record.name,
         }
@@ -64,5 +64,45 @@ class JsonFormatter(logging.Formatter):
 class DevConsoleFormatter(logging.Formatter):
     """Human-readable formatter for local development."""
 
+    # Standard LogRecord attributes to exclude when looking for extra fields
+    # _STANDARD_ATTRS = frozenset(
+    #     {
+    #         "name",
+    #         "msg",
+    #         "args",
+    #         "created",
+    #         "filename",
+    #         "funcName",
+    #         "levelname",
+    #         "levelno",
+    #         "lineno",
+    #         "module",
+    #         "msecs",
+    #         "pathname",
+    #         "process",
+    #         "processName",
+    #         "thread",
+    #         "threadName",
+    #         "exc_info",
+    #         "exc_text",
+    #         "stack_info",
+    #         "message",
+    #         "relativeCreated",
+    #         "taskName",
+    #     }
+    # )
+
     def format(self, record: logging.LogRecord) -> str:
-        return f"[{record.levelname}] {record.getMessage()} ({record.pathname}:{record.lineno})"
+        base = f"[{record.levelname}] {record.getMessage()} ({record.pathname}:{record.lineno})"
+
+        # Collect extra fields (anything not in standard LogRecord attributes)
+        extras = {
+            # k: v for k, v in record.__dict__.items()
+            # if k not in self._STANDARD_ATTRS and not k.startswith("_")
+        }
+
+        if extras:
+            extra_str = " ".join(f"{k}={v!r}" for k, v in extras.items())
+            return f"{base} | {extra_str}"
+
+        return base
