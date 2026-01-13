@@ -44,7 +44,7 @@ class JsonFormatter(logging.Formatter):
             "timestamp": datetime.fromtimestamp(
                 record.created, tz=timezone.utc
             ).isoformat(),
-            "level": record.levelname,
+            "level": record.levelname.lower(),
             "message": record.getMessage(),
             "logger": record.name,
         }
