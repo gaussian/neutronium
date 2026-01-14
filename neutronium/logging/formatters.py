@@ -116,6 +116,14 @@ class DevConsoleFormatter(logging.Formatter):
 
         if extras:
             extra_str = " ".join(f"{k}={v!r}" for k, v in extras.items())
-            return f"{base} | {extra_str}"
+            base = f"{base} | {extra_str}"
+
+        # Include exception info if present
+        if record.exc_info:
+            base = f"{base}\n{self.formatException(record.exc_info)}"
+
+        # Include stack_info if requested (e.g., logger.info("msg", stack_info=True))
+        if record.stack_info:
+            base = f"{base}\n{self.formatStack(record.stack_info)}"
 
         return base
