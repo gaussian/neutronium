@@ -1,4 +1,4 @@
-from neutron.utils.aws import get_ec2_metadata
+from neutron.utils.aws import get_instance_metadata
 
 
 def get_ssm_parameters_by_path(
@@ -15,7 +15,7 @@ def get_ssm_parameters_by_path(
         region_name = default_region
     else:
         try:
-            region_name = get_ec2_metadata().region
+            region_name = get_instance_metadata().region
         except Exception as e:
             region_name = None
 
