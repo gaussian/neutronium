@@ -6,11 +6,11 @@ try:
 except ImportError:
     trace = None  # OpenTelemetry not installed
 
-from .context import (
-    request_id_var,
-    user_id_var,
+from neutron.telemetry.context import (
     client_ip_var,
     enterprise_id_var,
+    request_id_var,
+    user_id_var,
 )
 
 
