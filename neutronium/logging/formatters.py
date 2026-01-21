@@ -78,40 +78,41 @@ class DevConsoleFormatter(logging.Formatter):
     """Human-readable formatter for local development."""
 
     # Standard LogRecord attributes to exclude when looking for extra fields
-    # _STANDARD_ATTRS = frozenset(
-    #     {
-    #         "name",
-    #         "msg",
-    #         "args",
-    #         "created",
-    #         "filename",
-    #         "funcName",
-    #         "levelname",
-    #         "levelno",
-    #         "lineno",
-    #         "module",
-    #         "msecs",
-    #         "pathname",
-    #         "process",
-    #         "processName",
-    #         "thread",
-    #         "threadName",
-    #         "exc_info",
-    #         "exc_text",
-    #         "stack_info",
-    #         "message",
-    #         "relativeCreated",
-    #         "taskName",
-    #     }
-    # )
+    _STANDARD_ATTRS = frozenset(
+        {
+            "name",
+            "msg",
+            "args",
+            "created",
+            "filename",
+            "funcName",
+            "levelname",
+            "levelno",
+            "lineno",
+            "module",
+            "msecs",
+            "pathname",
+            "process",
+            "processName",
+            "thread",
+            "threadName",
+            "exc_info",
+            "exc_text",
+            "stack_info",
+            "message",
+            "relativeCreated",
+            "taskName",
+        }
+    )
 
     def format(self, record: logging.LogRecord) -> str:
         base = f"[{record.levelname}] {record.getMessage()} ({record.pathname}:{record.lineno})"
 
         # Collect extra fields (anything not in standard LogRecord attributes)
         extras = {
-            # k: v for k, v in record.__dict__.items()
-            # if k not in self._STANDARD_ATTRS and not k.startswith("_")
+            k: v
+            for k, v in record.__dict__.items()
+            if k not in self._STANDARD_ATTRS and not k.startswith("_")
         }
 
         if extras:
