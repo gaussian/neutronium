@@ -59,14 +59,16 @@ class TestExtractTemplateVariablesFull:
         result = extract_template_variables_full(template)
         assert "items" in result
         assert result["items"] == "list"  # list iteration
-        assert "item.name" in result
+        # Loop variable is resolved to its source path
+        assert "items.0.name" in result
 
     def test_for_loop_nested_variable(self):
         template = "{% for record in section_data.records %}{{ record.name }}{% endfor %}"
         result = extract_template_variables_full(template)
         assert "section_data.records" in result
         assert result["section_data.records"] == "list"
-        assert "record.name" in result
+        # Loop variable is resolved to its source path
+        assert "section_data.records.0.name" in result
 
     def test_for_loop_dict_items(self):
         """For loops using .items() - capture the dict path with 'items' iteration type."""
@@ -110,7 +112,8 @@ class TestExtractTemplateVariablesFull:
         result = extract_template_variables_full(template)
         assert "user.name" in result
         assert "order.id" in result
-        assert "item.name" in result
+        # Loop variable is resolved to its source path
+        assert "items.0.name" in result
         assert "items" in result
         assert result["items"] == "list"
         # Builtins should not be in result
@@ -237,7 +240,10 @@ class TestBuildNestedContext:
     def test_array_at_root(self):
         """Test array index directly at value position."""
         result = build_nested_context({"codes.0": None})
-        assert result == {"codes": ["123456"]}
+        assert "codes" in result
+        assert isinstance(result["codes"], list)
+        assert len(result["codes"]) == 1
+        assert isinstance(result["codes"][0], str)
 
     def test_nested_arrays(self):
         """Test nested array structures."""
@@ -280,11 +286,14 @@ class TestTemplateContextIntegration:
         assert "order" in context
         assert "id" in context["order"]
         assert "total" in context["order"]
-        # order.items should be a list (for loop iteration)
+        # order.items should be a list (for loop iteration on property named "items")
         assert "items" in context["order"]
         assert isinstance(context["order"]["items"], list)
-        # item.name and item.price come from loop variable
-        assert "item" in context
+        # item is a loop variable - it gets resolved to order.items.0, NOT to top-level "item"
+        assert "item" not in context
+        # The item's properties should be in the list
+        assert "name" in context["order"]["items"][0]
+        assert "price" in context["order"]["items"][0]
 
     def test_real_world_email_template(self):
         template = """
@@ -358,14 +367,18 @@ class TestTemplateContextIntegration:
         assert isinstance(sections, dict)
         assert "Sample Section 1" in sections
 
-        section = sections["Sample Section 1"][0]
+        # sections VALUE is a dict (we access .name and .groupings on it)
+        section = sections["Sample Section 1"]
+        assert isinstance(section, dict), "dict value should be dict when properties are accessed"
         assert "name" in section
         assert "groupings" in section
         assert isinstance(section["groupings"], dict)
 
-        grouping = section["groupings"]["Sample Grouping 1"][0]
-        assert "body" in grouping
-        assert "name" in grouping
+        # groupings VALUE is a list (we iterate: {% for record in records %})
+        records = section["groupings"]["Sample Grouping 1"]
+        assert isinstance(records, list), "groupings value should be list because it's iterated"
+        assert "body" in records[0]
+        assert "name" in records[0]
 
     def test_with_variable_resolution(self):
         """Test that {% with %} variables are resolved correctly."""

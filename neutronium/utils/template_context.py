@@ -166,6 +166,13 @@ def _build_for_loop_scopes(
     for match in re.finditer(for_dict_pattern, template_content):
         var1, var2, source_path, method = match.groups()
         start_pos = match.end()
+
+        # .items REQUIRES two variables (key, value). If only one var, it's a list property named "items"
+        # e.g., {% for item in obj.items %} is list iteration on property "items", not dict .items()
+        if method == "items" and not var2:
+            # Skip - let this fall through to list pattern
+            continue
+
         if var2:
             var_names = [var1, var2]
             is_values = [False, True]  # var1 is key, var2 is value
@@ -176,8 +183,10 @@ def _build_for_loop_scopes(
 
     for match in re.finditer(for_list_pattern, template_content):
         var1, source_path = match.groups()
-        # Skip if this is actually a dict pattern (ends with .items/.values/.keys)
-        if source_path.endswith((".items", ".values", ".keys")):
+        # Skip if this is actually a dict .values() or .keys() pattern
+        # Note: .items is NOT skipped here - single-var .items is a list property, not dict iteration
+        # Dict .items() requires two variables and is handled by the dict pattern above
+        if source_path.endswith((".values", ".keys")):
             continue
         start_pos = match.end()
         for_starts.append((match.start(), start_pos, [var1], source_path, [True], None))
@@ -583,14 +592,21 @@ def build_nested_context(variable_paths: dict[str, str | None]) -> dict:
         if not is_nested:
             _set_nested_value(result, parts, built_collections[coll_path])
 
-    # Step 5: Add remaining scalar paths
-    for path, iteration_type in variable_paths.items():
-        if iteration_type is None and path not in handled_paths:
-            parts = path.split(".")
-            if parts[0] in FRAMEWORK_VARS:
-                continue
-            value = generate_fake_value(path, None)
-            _set_nested_value(result, parts, value)
+    # Step 5: Add remaining scalar paths (longest first to create deep structures before shallow)
+    scalar_paths = [
+        (path, iteration_type)
+        for path, iteration_type in variable_paths.items()
+        if iteration_type is None and path not in handled_paths
+    ]
+    # Sort by length descending so deep paths create structure before shallow paths
+    scalar_paths.sort(key=lambda x: len(x[0]), reverse=True)
+
+    for path, iteration_type in scalar_paths:
+        parts = path.split(".")
+        if parts[0] in FRAMEWORK_VARS:
+            continue
+        value = generate_fake_value(path, None)
+        _set_nested_value(result, parts, value)
 
     return result
 
@@ -601,6 +617,10 @@ def _set_nested_value(
     """
     Recursively set a value in a nested dict/list structure.
     Creates intermediate dicts/lists as needed.
+
+    Does NOT overwrite existing dict/list structures with scalar values.
+    This prevents shorter paths like "foo.bar" from overwriting structures
+    created by longer paths like "foo.bar.0.baz".
     """
     if len(parts) == 1:
         # Final part - set the value
@@ -613,6 +633,10 @@ def _set_nested_value(
                 obj[idx] = value
         else:
             if isinstance(obj, dict):
+                # Don't overwrite existing dict/list with scalar
+                if final in obj and isinstance(obj[final], (dict, list)):
+                    if isinstance(value, str):
+                        return  # Skip - don't replace structure with scalar
                 obj[final] = value
         return
 
