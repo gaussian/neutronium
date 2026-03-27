@@ -99,6 +99,9 @@ def load_json_from_file(file_path: str, encoding=None) -> dict | list | None:
         r"/\*.*?\*/", "", file_contents, flags=re.DOTALL
     )  # Remove multi-line comments
 
+    # Remove trailing commas (not valid in JSON but common in JSONC)
+    file_contents = re.sub(r",\s*([\]\}])", r"\1", file_contents)
+
     # Parse and return the JSON
     return json.loads(file_contents)
 
