@@ -18,7 +18,7 @@ def schema_to_default_dict(schema: dict):
     Output: {'name': None, 'age': 18, 'hobbies': []}
     """
     result = {}
-    for key, value in schema["properties"].items():
+    for key, value in schema.get("properties", {}).items():
         if "default" in value:
             result[key] = value["default"]
         elif value["type"] == "array":
