@@ -147,13 +147,13 @@ class Requester:
             # Read (consume) the content then return
             if open_response and success:
 
-                # If encoding type is not guessed to be UTF-8, evaluate the "apparent encoding"
-                # using chardet (via open_response.apparent_encoding)
-                if (
-                    isinstance(open_response.encoding, str)
-                    and open_response.encoding.lower().replace("-", "") != "utf8"
-                ):
-                    open_response.encoding = open_response.apparent_encoding
+                # Trust the charset requests resolved from the HTTP header; do NOT
+                # consult apparent_encoding — its chardet backend mis-detects some
+                # HTML as utf-7 and garbles the body. Only when the header gave no
+                # charset at all (encoding is None) do we default to utf-8, so that
+                # Response.text doesn't fall back to apparent_encoding internally.
+                if open_response.encoding is None:
+                    open_response.encoding = "utf-8"
 
                 # Pull content, simple normalization
                 content = open_response.content
