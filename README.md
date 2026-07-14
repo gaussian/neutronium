@@ -23,6 +23,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 | `neutronium.utils.schema` | JSON-schema → default-dict |
 | `neutronium.utils.xpath` | lxml HTML parsing + link extraction (`[xpath]`) |
 | `neutronium.utils.email` | Canonical email normalization |
+| `neutronium.utils.{aws,ssm}` | EC2/ECS instance metadata + SSM parameter fetch (`[aws]`) |
 | `neutronium.utils.{print,params,profiling,memory,url_credentials}` | Assorted small utilities |
 | `neutronium.threads.thread_simple` | Minimal threading helpers |
 | `neutronium.telemetry` | Request-context vars, `RequestFacts`, pluggable sinks |
@@ -30,7 +31,9 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 
 ## Optional extras
 
-`text`, `time`, `memory`, `xpath`, `otel`, `profiling` — install only what you use.
+`text`, `time`, `aws`, `memory`, `xpath`, `otel`, `profiling` — install only what you use.
+
+- `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm`)
 
 ## Development
 
