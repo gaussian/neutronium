@@ -1,7 +1,6 @@
-
 from typing import Protocol
 
-from neutron.telemetry.facts import RequestFacts
+from neutronium.telemetry.facts import RequestFacts
 
 
 class TelemetrySink(Protocol):

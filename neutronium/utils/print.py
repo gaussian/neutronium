@@ -1,5 +1,3 @@
-
-
 def truncate_strings(obj, max_len):
     """
     Recursively truncate strings within nested structures.

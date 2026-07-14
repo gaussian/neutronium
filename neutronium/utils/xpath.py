@@ -1,8 +1,7 @@
-import lxml.html
-import lxml.etree
-
-
 def get_xml_obj_from_html(html):
+    import lxml.html
+    import lxml.etree
+
     # Empty or missing
     if not html:
         return None

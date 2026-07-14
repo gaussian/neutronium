@@ -1,0 +1,41 @@
+[build-system]
+requires = [
+  "setuptools>=61.0",
+  "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neutronium"
+version = "0.1.0"
+description = "Framework-agnostic Python utilities: text, time, iterables, structured logging, telemetry primitives, and more."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+text = ["inflection"]
+time = ["python-dateutil"]
+memory = ["psutil", "pympler", "objgraph"]
+xpath = ["lxml"]
+otel = ["opentelemetry-api"]
+profiling = ["line_profiler"]
+
+[project.urls]
+Homepage = "https://github.com/gaussian/neutronium"
+Issues = "https://github.com/gaussian/neutronium/issues"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "inflection",
+  "python-dateutil",
+  "lxml",
+]
+
+[tool.setuptools.packages.find]
+include = ["neutronium*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

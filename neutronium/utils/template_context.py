@@ -1,9 +1,7 @@
-
 """
 Pure Python utilities for template variable extraction and context building.
 No Django dependencies - can be tested without Django setup.
 
-For Django-dependent email template utilities, see neutron.messaging.template_context.
 """
 
 import copy

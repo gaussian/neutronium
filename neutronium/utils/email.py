@@ -1,5 +1,3 @@
-
-
 def get_canonical_email(email=None):
     """
     :param email:

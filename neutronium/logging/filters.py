@@ -1,4 +1,3 @@
-
 import logging
 
 try:
@@ -6,7 +5,7 @@ try:
 except ImportError:
     trace = None  # OpenTelemetry not installed
 
-from neutron.telemetry.context import (
+from neutronium.telemetry.context import (
     client_ip_var,
     enterprise_id_var,
     request_id_var,

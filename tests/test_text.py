@@ -1,16 +1,12 @@
 import unittest
 
-from django.test import tag
-
-from neutron.utils.text import normalize_web_text
+from neutronium.utils.text import normalize_web_text
 
 
 class TextUtilsTestCase(unittest.TestCase):
     @classmethod
     def setUpTestData(cls):
         pass
-
-    @tag("fast", "infrastructure")
     def test_can_normalize_text(self):
         data = [
             ("Hello(R)", "Hello"),

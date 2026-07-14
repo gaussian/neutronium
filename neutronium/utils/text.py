@@ -1,4 +1,3 @@
-
 from typing import List, Optional
 
 import difflib
@@ -255,7 +254,6 @@ def clean_multi_page_report(
     remove_short_lines_with = remove_short_lines_with or []
 
     # Debug
-    # from neutron.utils.performance import Performance
     # perf = Performance()
     # perf.print_time_since(level=3, pre_print="strt")
 
@@ -433,7 +431,6 @@ def clean_multi_page_report(
             continue
 
         # Debug
-        # from neutron.utils.performance import Performance
         # perf = Performance()
         # perf.print_time_since(level=3, pre_print="!!!")
 
