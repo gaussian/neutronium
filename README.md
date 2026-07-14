@@ -31,9 +31,10 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 
 ## Optional extras
 
-`text`, `time`, `aws`, `memory`, `xpath`, `otel`, `profiling` — install only what you use.
+`text`, `time`, `aws`, `memory`, `memory-extended`, `xpath`, `otel`, `profiling` — install only what you use.
 
 - `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm`)
+- `memory` → `psutil` (for `print_memory_usage`); `memory-extended` → `pympler`, `objgraph` (for the heap/objgraph tools — opt in only if you use them)
 
 ## Development
 
