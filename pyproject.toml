@@ -18,6 +18,7 @@ dependencies = []
 text = ["inflection"]
 time = ["python-dateutil"]
 memory = ["psutil", "pympler", "objgraph"]
+aws = ["boto3>=1.36", "requests>=2.23", "ec2-metadata"]
 xpath = ["lxml"]
 otel = ["opentelemetry-api"]
 profiling = ["line_profiler"]
@@ -32,6 +33,7 @@ dev = [
   "inflection",
   "python-dateutil",
   "lxml",
+  "boto3>=1.36",
 ]
 
 [tool.setuptools.packages.find]

@@ -1,4 +1,4 @@
-from neutron.utils.aws import get_instance_metadata
+from neutronium.utils.aws import get_instance_metadata
 
 
 def get_ssm_parameters_by_path(
