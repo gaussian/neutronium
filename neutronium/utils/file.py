@@ -138,14 +138,6 @@ def json_serialize(obj):
     return json.dumps(obj, cls=Encoder, indent=4)
 
 
-def serialize_to_file(querysets, file_path: str):
-    from django.core import serializers
-
-    with open(file_path, "w+") as out:
-        for queryset in querysets:
-            serializers.serialize("json", queryset, stream=out)
-
-
 def make_filename_friendly(filename: str) -> str:
     return "".join(
         [c for c in filename if c.isalpha() or c.isdigit() or c == " "]
