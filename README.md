@@ -23,7 +23,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 | `neutronium.utils.schema` | JSON-schema → default-dict |
 | `neutronium.utils.xpath` | lxml HTML parsing + link extraction (`[xpath]`) |
 | `neutronium.utils.email` | Canonical email normalization |
-| `neutronium.utils.{aws,ssm}` | EC2/ECS instance metadata + SSM parameter fetch (`[aws]`) |
+| `neutronium.utils.{aws,ssm,s3}` | EC2/ECS instance metadata, SSM parameter fetch, S3 upload/download (`[aws]`) |
 | `neutronium.utils.{print,params,profiling,memory,url_credentials}` | Assorted small utilities |
 | `neutronium.threads.thread_simple` | Minimal threading helpers |
 | `neutronium.telemetry` | Request-context vars, `RequestFacts`, pluggable sinks |
@@ -33,7 +33,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 
 `text`, `time`, `aws`, `memory`, `memory-extended`, `xpath`, `otel`, `profiling` — install only what you use.
 
-- `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm`)
+- `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm` / `s3`)
 - `memory` → `psutil` (for `print_memory_usage`); `memory-extended` → `pympler`, `objgraph` (for the heap/objgraph tools — opt in only if you use them)
 
 ## Development

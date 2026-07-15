@@ -31,10 +31,7 @@ Issues = "https://github.com/gaussian/neutronium/issues"
 [dependency-groups]
 dev = [
   "pytest>=8.0",
-  "inflection",
-  "python-dateutil",
-  "lxml",
-  "boto3>=1.36",
+  "moto>=5",
 ]
 
 [tool.setuptools.packages.find]

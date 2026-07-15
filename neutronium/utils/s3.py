@@ -3,9 +3,23 @@ from gzip import GzipFile
 from io import BytesIO
 from typing import Optional, List
 
-import boto3
-from botocore.exceptions import ClientError
-from django.conf import settings
+
+def _s3_client(aws_access_key_id=None, aws_secret_access_key=None):
+    import boto3
+    return boto3.client(
+        "s3",
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+    )
+
+
+def _s3_resource(aws_access_key_id=None, aws_secret_access_key=None):
+    import boto3
+    return boto3.resource(
+        "s3",
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+    )
 
 
 def upload_dir_to_s3(source_directory: str, s3_path: str, s3_bucket: str = None, archive: bool = True):
@@ -50,7 +64,9 @@ def upload_to_s3(s3_path: str,
                  content=None,
                  compress: bool = False,
                  verbose: bool = False,
-                 do_not_overwrite: bool = True
+                 do_not_overwrite: bool = True,
+                 aws_access_key_id=None,
+                 aws_secret_access_key=None,
                  ) -> Optional[str]:
     """Some inspiration from https://gist.github.com/veselosky/9427faa38cee75cd8e27"""
 
@@ -59,11 +75,7 @@ def upload_to_s3(s3_path: str,
         raise ValueError(f"Need filename or content defined to upload to S3, requested path is {s3_path}")
 
     # S3 client
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-    )
+    s3 = _s3_client(aws_access_key_id, aws_secret_access_key)
     extra_args = dict()
     if meta:
         extra_args["Metadata"] = meta
@@ -121,13 +133,11 @@ def upload_to_s3(s3_path: str,
 def download_from_s3(s3_path: str,
                      s3_bucket: str,
                      decompress: bool = False,
-                     encoding: str = None):
+                     encoding: str = None,
+                     aws_access_key_id=None,
+                     aws_secret_access_key=None):
     # S3 client
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-    )
+    s3 = _s3_client(aws_access_key_id, aws_secret_access_key)
 
     # Download
     try:
@@ -156,37 +166,11 @@ def download_from_s3(s3_path: str,
     return body
 
 
-# def delete_from_s3(s3_paths: List[str], s3_bucket: str):
-#     # S3 client
-#     s3 = boto3.client(
-#         "s3",
-#         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-#         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-#     )
-#
-#     # Delete the provided paths
-#     for s3_path in s3_paths:
-#         try:
-#             response = s3.delete_object(
-#                 Bucket=s3_bucket,
-#                 Key=s3_path,
-#             )
-#
-#         # No object found at this location
-#         # TODO: this exception might not be raised...
-#         except s3.exceptions.NoSuchKey:
-#             continue
-
-
-def clear_s3_dir_safe(s3_bucket: str, s3_dir: str):
+def clear_s3_dir_safe(s3_bucket: str, s3_dir: str, aws_access_key_id=None, aws_secret_access_key=None):
     delete_limit = 10
 
     # S3 resource
-    s3 = boto3.resource(
-        "s3",
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-    )
+    s3 = _s3_resource(aws_access_key_id, aws_secret_access_key)
 
     # Bucket
     bucket = s3.Bucket(s3_bucket)
@@ -208,6 +192,8 @@ def clear_s3_dir_safe(s3_bucket: str, s3_dir: str):
 
 
 def _obj_exists(client, **kwargs):
+    from botocore.exceptions import ClientError
+
     try:
         client.head_object(**kwargs)
 
