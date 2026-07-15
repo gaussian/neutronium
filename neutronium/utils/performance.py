@@ -1,8 +1,4 @@
-
-
 import time
-
-from django.db import connections, reset_queries
 
 
 class Performance:
@@ -30,27 +26,6 @@ class Performance:
         self.reset(starting_level=level)
 
         return time_diff
-
-    @staticmethod
-    def clear_latest_queries():
-        reset_queries()
-
-    @staticmethod
-    def print_latest_queries(num_queries=60, connection_ids=('default',), stop_program=False):
-        for connection_id in connection_ids:
-            print(f"== CONNECTION: {connection_id}")
-            [print(f"[{q['time']}s] {q['sql']}")
-             for q in connections[connection_id].queries[-num_queries:]]
-        if stop_program:
-            raise ValueError("Stopping program in print_latest_queries as requested.")
-
-    @staticmethod
-    def do_latest_queries_contain_keywords(keywords, db='default'):
-        for query in connections[db].queries[-60:]:
-            for keyword in keywords:
-                if keyword in query['sql']:
-                    return True
-        return False
 
     def reset(self, starting_level=0):
         for i in range(starting_level, self.num_levels):
