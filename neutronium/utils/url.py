@@ -3,9 +3,6 @@ import logging
 from urllib.parse import urlparse, parse_qs, urljoin, urlencode, ParseResult
 from typing import Tuple, Any, Optional, List, Iterable, Set
 
-from django.core.validators import URLValidator
-from django.core.exceptions import ValidationError
-
 
 logger = logging.getLogger(__name__)
 
@@ -322,17 +319,6 @@ def get_param_from_url(url, param) -> Optional[str]:
     return parse_qs(url_obj.query).get(param)
 
 
-def is_url_valid(url: str) -> bool:
-    if not url:
-        return False
-    validator = URLValidator()
-    try:
-        validator(url)
-        return True
-    except ValidationError:
-        return False
-
-
 def get_stripped_urls(urls: Iterable[str], strip_down_to_substring: str):
     """
     Get the result of stripping each URL down to the provided substring.
@@ -436,8 +422,7 @@ def extract_dict_from_query_params(query_params, possible_param_definitions: Ite
         ('search_terms', list),
     ]
 
-    :param query_params:
-    :type query_params: django.http.QueryDict
+    :param query_params: a QueryDict-like mapping (supports .get() and .getlist())
     :param possible_param_definitions:
     :return:
     """
