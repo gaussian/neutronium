@@ -23,7 +23,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 | `neutronium.utils.schema` | JSON-schema → default-dict |
 | `neutronium.utils.xpath` | lxml HTML parsing + link extraction (`[xpath]`) |
 | `neutronium.utils.url` | URL parse / canonicalize / normalize / domain extraction (`[url]`) |
-| `neutronium.requester` | Resilient HTTP fetcher with retries/paywall/no-index detection (`[requester]`) |
+| `neutronium.requester` | Resilient HTTP fetcher with retries/paywall/no-index detection (`[requests]`) |
 | `neutronium.utils.file` | Pickle / text / JSONC file helpers |
 | `neutronium.utils.performance` | Simple multi-level timer |
 | `neutronium.utils.email` | Canonical email normalization |
