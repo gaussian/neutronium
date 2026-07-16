@@ -5,12 +5,10 @@ from typing import Optional
 
 import idna
 import requests
-from django.core.exceptions import ValidationError
-from celery.exceptions import WorkerTerminate
 from requests.structures import CaseInsensitiveDict
 
-from neutron.utils.text import normalize_chars
-from neutron.utils.url import canonize_url, rebuild_url, parse_url
+from neutronium.utils.text import normalize_chars
+from neutronium.utils.url import canonize_url, rebuild_url, parse_url
 
 try:
     import requests_cache
@@ -19,6 +17,16 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
+
+
+class RequesterError(Exception):
+    """Raised by a fetch failure when ``raise_validation_error=True``.
+
+    Previously this raised Django's ``ValidationError``; that coupling was
+    arbitrary (it was used only as a generic "fetch failed" signal), so the
+    requester now raises its own exception. Callers that need a different type
+    (e.g. Django's ``ValidationError``) should catch this and re-raise.
+    """
 
 
 class Requester:
@@ -40,7 +48,6 @@ class Requester:
         self.try_optimize_url = kwargs.get("try_optimize_url", True)
         self.try_handle_paywall = kwargs.get("try_handle_paywall", True)
         self.raise_validation_error = kwargs.get("raise_validation_error", False)
-        self.is_celery_worker = kwargs.get("is_celery_worker", False)
         self.verbose = kwargs.get("verbose", False)
 
         # If existing session exists, do not close it on __exit__
@@ -303,8 +310,8 @@ class Requester:
                 f"Memory error downloading {url} ({self.log_context}), detail: {e}"
             )
             logger.exception(error_message)
-            if self.is_celery_worker:
-                raise WorkerTerminate(error_message)
+            # Framework-agnostic: re-raise the MemoryError. A celery caller that
+            # wants to terminate the worker should catch MemoryError itself.
             raise
 
         # Too many redirects (don't retry, print don't log)
@@ -378,7 +385,7 @@ class Requester:
             if log_error and error_message and allow_retry:
                 logger.error(error_message)
             if self.raise_validation_error:
-                raise ValidationError(error_message)
+                raise RequesterError(error_message)
 
         return response, success
 

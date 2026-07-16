@@ -23,6 +23,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 | `neutronium.utils.schema` | JSON-schema → default-dict |
 | `neutronium.utils.xpath` | lxml HTML parsing + link extraction (`[xpath]`) |
 | `neutronium.utils.url` | URL parse / canonicalize / normalize / domain extraction (`[url]`) |
+| `neutronium.requester` | Resilient HTTP fetcher with retries/paywall/no-index detection (`[requester]`) |
 | `neutronium.utils.file` | Pickle / text / JSONC file helpers |
 | `neutronium.utils.performance` | Simple multi-level timer |
 | `neutronium.utils.email` | Canonical email normalization |
@@ -34,7 +35,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 
 ## Optional extras
 
-`text`, `time`, `aws`, `url`, `memory`, `memory-extended`, `xpath`, `otel`, `profiling` — install only what you use.
+`text`, `time`, `aws`, `url`, `requester`, `memory`, `memory-extended`, `xpath`, `otel`, `profiling` — install only what you use.
 
 - `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm` / `s3`)
 - `url` → `tldextract` (only for `get_url_domain`; the rest of `neutronium.utils.url` is pure stdlib)
