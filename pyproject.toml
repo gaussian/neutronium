@@ -17,8 +17,11 @@ dependencies = []
 [project.optional-dependencies]
 text = ["inflection"]
 time = ["python-dateutil"]
-memory = ["psutil", "pympler", "objgraph"]
+memory = ["psutil"]
+memory-extended = ["pympler", "objgraph"]
 aws = ["boto3>=1.36", "requests>=2.23", "ec2-metadata"]
+url = ["tldextract"]
+requests = ["requests>=2.23", "idna"]
 xpath = ["lxml"]
 otel = ["opentelemetry-api"]
 profiling = ["line_profiler"]
@@ -30,10 +33,7 @@ Issues = "https://github.com/gaussian/neutronium/issues"
 [dependency-groups]
 dev = [
   "pytest>=8.0",
-  "inflection",
-  "python-dateutil",
-  "lxml",
-  "boto3>=1.36",
+  "moto>=5",
 ]
 
 [tool.setuptools.packages.find]

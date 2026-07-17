@@ -1,6 +1,16 @@
+import string
 import unittest
 
-from neutronium.utils.text import normalize_web_text
+from neutronium.utils.text import create_random_string, normalize_web_text
+
+
+def test_create_random_string_length_and_charset():
+    s = create_random_string(24)
+    assert len(s) == 24
+    allowed = set(string.ascii_letters + string.digits)
+    assert set(s) <= allowed
+    # SystemRandom-backed: two calls should essentially never collide
+    assert create_random_string(24) != create_random_string(24)
 
 
 class TextUtilsTestCase(unittest.TestCase):

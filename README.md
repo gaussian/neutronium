@@ -22,8 +22,12 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 | `neutronium.utils.hash` | `blake2b` content hashing helpers |
 | `neutronium.utils.schema` | JSON-schema → default-dict |
 | `neutronium.utils.xpath` | lxml HTML parsing + link extraction (`[xpath]`) |
+| `neutronium.utils.url` | URL parse / canonicalize / normalize / domain extraction (`[url]`) |
+| `neutronium.requester` | Resilient HTTP fetcher with retries/paywall/no-index detection (`[requests]`) |
+| `neutronium.utils.file` | Pickle / text / JSONC file helpers |
+| `neutronium.utils.performance` | Simple multi-level timer |
 | `neutronium.utils.email` | Canonical email normalization |
-| `neutronium.utils.{aws,ssm}` | EC2/ECS instance metadata + SSM parameter fetch (`[aws]`) |
+| `neutronium.utils.{aws,ssm,s3}` | EC2/ECS instance metadata, SSM parameter fetch, S3 upload/download (`[aws]`) |
 | `neutronium.utils.{print,params,profiling,memory,url_credentials}` | Assorted small utilities |
 | `neutronium.threads.thread_simple` | Minimal threading helpers |
 | `neutronium.telemetry` | Request-context vars, `RequestFacts`, pluggable sinks |
@@ -31,9 +35,11 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 
 ## Optional extras
 
-`text`, `time`, `aws`, `memory`, `xpath`, `otel`, `profiling` — install only what you use.
+`text`, `time`, `aws`, `url`, `requester`, `memory`, `memory-extended`, `xpath`, `otel`, `profiling` — install only what you use.
 
-- `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm`)
+- `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm` / `s3`)
+- `url` → `tldextract` (only for `get_url_domain`; the rest of `neutronium.utils.url` is pure stdlib)
+- `memory` → `psutil` (for `print_memory_usage`); `memory-extended` → `pympler`, `objgraph` (for the heap/objgraph tools — opt in only if you use them)
 
 ## Development
 

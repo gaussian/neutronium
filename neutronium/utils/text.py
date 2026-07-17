@@ -32,6 +32,16 @@ def random_string(num_chars):
     return "".join(random.choice(chars) for _ in range(num_chars))
 
 
+def create_random_string(length):
+    # Cryptographically secure variant of random_string (uses SystemRandom).
+    return "".join(
+        random.SystemRandom().choice(
+            string.ascii_uppercase + string.ascii_lowercase + string.digits
+        )
+        for _ in range(length)
+    )
+
+
 def rchop(text, ending):
     if text.endswith(ending):
         return text[: -len(ending)]
