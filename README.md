@@ -35,7 +35,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 
 ## Optional extras
 
-`text`, `time`, `aws`, `url`, `requester`, `memory`, `memory-extended`, `xpath`, `otel`, `profiling` — install only what you use.
+`text`, `time`, `aws`, `url`, `requests`, `memory`, `memory-extended`, `xpath`, `otel`, `profiling` — install only what you use.
 
 - `aws` → `boto3`, `requests`, `ec2-metadata` (for `neutronium.utils.aws` / `ssm` / `s3`)
 - `url` → `tldextract` (only for `get_url_domain`; the rest of `neutronium.utils.url` is pure stdlib)
@@ -44,8 +44,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 ## Development
 
 ```sh
-uv sync --group dev
-uv run pytest
+uv run --all-extras pytest   # installs all optional extras + the dev group
 ```
 
 ## License
