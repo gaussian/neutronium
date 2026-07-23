@@ -29,8 +29,8 @@ jobs:
       - name: Compile check
         run: uv run --all-extras python -m compileall -q neutronium/
 
-  pytest:
-    name: pytest
+  test:
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

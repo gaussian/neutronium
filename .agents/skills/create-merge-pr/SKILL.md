@@ -41,7 +41,7 @@ bump commit lives separately on `develop`):
 gh pr merge --merge --delete-branch
 ```
 
-Checks (`lint`, `pytest`) run automatically and must pass — `main` is protected,
+Checks (`lint`, `test`) run automatically and must pass — `main` is protected,
 so a red PR cannot be merged. If something's red, fix it and push; you can
 reproduce the checks locally:
 
