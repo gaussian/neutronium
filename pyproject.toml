@@ -34,6 +34,7 @@ Issues = "https://github.com/gaussian/neutronium/issues"
 dev = [
   "pytest>=8.0",
   "moto>=5",
+  "ruff>=0.10",
 ]
 
 [tool.setuptools.packages.find]
@@ -41,3 +42,9 @@ include = ["neutronium*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+# Ruff's default rule set (pyflakes + core pycodestyle). F841 (unused local) is
+# excluded — the codebase has intentional demo assignments and it is the least
+# valuable rule.
+ignore = ["F841"]

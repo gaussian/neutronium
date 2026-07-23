@@ -28,9 +28,12 @@ def s3_bucket(monkeypatch):
 
 
 def test_upload_and_download_roundtrip(s3_bucket):
-    assert s3.upload_to_s3(
-        s3_path="a/b.txt", s3_bucket=BUCKET, content="hello", do_not_overwrite=False
-    ) is None
+    assert (
+        s3.upload_to_s3(
+            s3_path="a/b.txt", s3_bucket=BUCKET, content="hello", do_not_overwrite=False
+        )
+        is None
+    )
     assert s3.download_from_s3("a/b.txt", BUCKET) == b"hello"
 
 
@@ -39,14 +42,23 @@ def test_download_missing_key_returns_none(s3_bucket):
 
 
 def test_do_not_overwrite_detects_existing(s3_bucket):
-    s3.upload_to_s3(s3_path="x.txt", s3_bucket=BUCKET, content="v1", do_not_overwrite=False)
-    assert s3.upload_to_s3(
-        s3_path="x.txt", s3_bucket=BUCKET, content="v2", do_not_overwrite=True
-    ) == "exists"
+    s3.upload_to_s3(
+        s3_path="x.txt", s3_bucket=BUCKET, content="v1", do_not_overwrite=False
+    )
+    assert (
+        s3.upload_to_s3(
+            s3_path="x.txt", s3_bucket=BUCKET, content="v2", do_not_overwrite=True
+        )
+        == "exists"
+    )
 
 
 def test_clear_s3_dir_safe_deletes(s3_bucket):
-    s3.upload_to_s3(s3_path="dir/1.txt", s3_bucket=BUCKET, content="a", do_not_overwrite=False)
-    s3.upload_to_s3(s3_path="dir/2.txt", s3_bucket=BUCKET, content="b", do_not_overwrite=False)
+    s3.upload_to_s3(
+        s3_path="dir/1.txt", s3_bucket=BUCKET, content="a", do_not_overwrite=False
+    )
+    s3.upload_to_s3(
+        s3_path="dir/2.txt", s3_bucket=BUCKET, content="b", do_not_overwrite=False
+    )
     s3.clear_s3_dir_safe(BUCKET, "dir")
     assert s3.download_from_s3("dir/1.txt", BUCKET) is None

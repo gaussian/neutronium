@@ -216,7 +216,6 @@ def strip_insignificant_text_lines(
     lines = text.split("\n")
     lines_to_keep = []
     for line in lines:
-
         # Short lines
         if len(line) < 8:
             continue
@@ -301,7 +300,9 @@ def clean_multi_page_report(
                 if (
                     len(line) <= 25
                     and (
-                        line[-1].isdigit() or line[-1] in ("%",) or line[0] in CURRENCIES
+                        line[-1].isdigit()
+                        or line[-1] in ("%",)
+                        or line[0] in CURRENCIES
                     )
                     and not line.startswith("Item ")
                 ):
@@ -550,9 +551,12 @@ def clean_multi_page_report(
                     if k == 0
                     else (
                         " "
-                        if ln and not ln.isupper() and
+                        if ln
+                        and not ln.isupper()
+                        and
                         # ln[0].islower() and
-                        good_lines[k - 1] and
+                        good_lines[k - 1]
+                        and
                         # Last chars not END_CHARS, unless QUOTE
                         good_lines[k - 1][-1] not in NORMAL_END_CHARS
                         and (

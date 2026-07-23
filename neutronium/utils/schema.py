@@ -1,6 +1,3 @@
-from typing import Any, Optional
-
-
 def schema_to_default_dict(schema: dict):
     """
     Convert a schema to a dictionary with default values.

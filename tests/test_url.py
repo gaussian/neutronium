@@ -18,7 +18,10 @@ def test_parse_url_lowercases_netloc_and_strips_default_port():
 
 
 def test_get_url_root_canonized():
-    assert url.get_url_root_canonized("http://www.example.com/a/b?q=1") == "http://www.example.com"
+    assert (
+        url.get_url_root_canonized("http://www.example.com/a/b?q=1")
+        == "http://www.example.com"
+    )
 
 
 def test_get_url_path_strips_slashes():
@@ -30,4 +33,7 @@ def test_get_url_domain_basic():
 
 
 def test_get_url_domain_with_subdomain():
-    assert url.get_url_domain("http://www.boeing.co.uk", include_subdomain=True) == "www.boeing.co.uk"
+    assert (
+        url.get_url_domain("http://www.boeing.co.uk", include_subdomain=True)
+        == "www.boeing.co.uk"
+    )

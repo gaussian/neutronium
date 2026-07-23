@@ -16,7 +16,7 @@ def get_ssm_parameters_by_path(
     else:
         try:
             region_name = get_instance_metadata().region
-        except Exception as e:
+        except Exception:
             region_name = None
 
     # S3 client
@@ -41,7 +41,7 @@ def get_ssm_parameters_by_path(
             next_token = response.get("NextToken", None)
             if not next_token:
                 break
-    except Exception as e:
+    except Exception:
         return dict()
 
     # Turn into dict

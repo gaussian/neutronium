@@ -17,6 +17,7 @@ class TextUtilsTestCase(unittest.TestCase):
     @classmethod
     def setUpTestData(cls):
         pass
+
     def test_can_normalize_text(self):
         data = [
             ("Hello(R)", "Hello"),
@@ -33,7 +34,10 @@ class TextUtilsTestCase(unittest.TestCase):
                 "Everyone had an alibi—except John.",
                 "Everyone had an alibi — except John.",
             ),
-            ("Everyone had an alibi-except John.", "Everyone had an alibi-except John."),
+            (
+                "Everyone had an alibi-except John.",
+                "Everyone had an alibi-except John.",
+            ),
         ]
 
         for text, desired_output in data:

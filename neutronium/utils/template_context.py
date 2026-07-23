@@ -156,7 +156,9 @@ def _build_for_loop_scopes(
     for_dict_pattern = r"\{%\s*for\s+(\w+)(?:\s*,\s*(\w+))?\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)*)\.(items|values|keys)\s*%\}"
 
     # Pattern for list iteration: {% for x in path %}
-    for_list_pattern = r"\{%\s*for\s+(\w+)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\s*%\}"
+    for_list_pattern = (
+        r"\{%\s*for\s+(\w+)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\s*%\}"
+    )
 
     # Collect all for-loop starts with their info
     for_starts: list[tuple[int, int, list[str], str, list[bool], str | None]] = []
@@ -177,7 +179,9 @@ def _build_for_loop_scopes(
         else:
             var_names = [var1]
             is_values = [True]
-        for_starts.append((match.start(), start_pos, var_names, source_path, is_values, method))
+        for_starts.append(
+            (match.start(), start_pos, var_names, source_path, is_values, method)
+        )
 
     for match in re.finditer(for_list_pattern, template_content):
         var1, source_path = match.groups()
@@ -194,7 +198,9 @@ def _build_for_loop_scopes(
 
     # Find matching {% endfor %} for each {% for %}
     endfor_pattern = r"\{%\s*endfor\s*%\}"
-    endfor_positions = [m.start() for m in re.finditer(endfor_pattern, template_content)]
+    endfor_positions = [
+        m.start() for m in re.finditer(endfor_pattern, template_content)
+    ]
 
     # Match for-loops with endfor using a stack
     # Stack contains tuples with RESOLVED source paths
@@ -205,16 +211,31 @@ def _build_for_loop_scopes(
     # Process in order of position
     while for_idx < len(for_starts) or (stack and endfor_idx < len(endfor_positions)):
         # Get next for and endfor positions
-        next_for_pos = for_starts[for_idx][0] if for_idx < len(for_starts) else float("inf")
-        next_endfor_pos = endfor_positions[endfor_idx] if endfor_idx < len(endfor_positions) else float("inf")
+        next_for_pos = (
+            for_starts[for_idx][0] if for_idx < len(for_starts) else float("inf")
+        )
+        next_endfor_pos = (
+            endfor_positions[endfor_idx]
+            if endfor_idx < len(endfor_positions)
+            else float("inf")
+        )
 
         if next_for_pos < next_endfor_pos:
             # Push this for-loop onto stack, resolving source path using parent scopes on stack
-            tag_start, start_pos, var_names, source_path, is_values, method = for_starts[for_idx]
+            tag_start, start_pos, var_names, source_path, is_values, method = (
+                for_starts[for_idx]
+            )
 
             # Build loop_var_sources from parent loops still on the stack
             loop_var_sources: dict[str, tuple[str, bool]] = {}
-            for _s_tag_start, _s_start_pos, s_var_names, s_resolved_source, s_is_values, _s_method in stack:
+            for (
+                _s_tag_start,
+                _s_start_pos,
+                s_var_names,
+                s_resolved_source,
+                s_is_values,
+                _s_method,
+            ) in stack:
                 for var_name, is_value in zip(s_var_names, s_is_values):
                     loop_var_sources[var_name] = (s_resolved_source, is_value)
 
@@ -227,14 +248,20 @@ def _build_for_loop_scopes(
                     resolved_source = resolved
 
             # Push with resolved source
-            stack.append((tag_start, start_pos, var_names, resolved_source, is_values, method))
+            stack.append(
+                (tag_start, start_pos, var_names, resolved_source, is_values, method)
+            )
             for_idx += 1
         else:
             # Pop from stack and create scope
             if stack:
-                tag_start, start_pos, var_names, resolved_source, is_values, method = stack.pop()
+                tag_start, start_pos, var_names, resolved_source, is_values, method = (
+                    stack.pop()
+                )
                 end_pos = endfor_positions[endfor_idx]
-                scopes.append((start_pos, end_pos, var_names, resolved_source, is_values, method))
+                scopes.append(
+                    (start_pos, end_pos, var_names, resolved_source, is_values, method)
+                )
             endfor_idx += 1
 
     return scopes
@@ -251,7 +278,9 @@ def _build_with_scopes(
     """
     scopes: list[tuple[int, int, str, str]] = []
 
-    with_pattern = r"\{%\s*with\s+(\w+)\s*=\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)*)\s*%\}"
+    with_pattern = (
+        r"\{%\s*with\s+(\w+)\s*=\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)*)\s*%\}"
+    )
     endwith_pattern = r"\{%\s*endwith\s*%\}"
 
     with_starts: list[tuple[int, int, str, str]] = []
@@ -261,16 +290,26 @@ def _build_with_scopes(
 
     with_starts.sort(key=lambda x: x[0])
 
-    endwith_positions = [m.start() for m in re.finditer(endwith_pattern, template_content)]
+    endwith_positions = [
+        m.start() for m in re.finditer(endwith_pattern, template_content)
+    ]
 
     # Match with-blocks with endwith using a stack
     stack: list[tuple[int, int, str, str]] = []
     with_idx = 0
     endwith_idx = 0
 
-    while with_idx < len(with_starts) or (stack and endwith_idx < len(endwith_positions)):
-        next_with_pos = with_starts[with_idx][0] if with_idx < len(with_starts) else float("inf")
-        next_endwith_pos = endwith_positions[endwith_idx] if endwith_idx < len(endwith_positions) else float("inf")
+    while with_idx < len(with_starts) or (
+        stack and endwith_idx < len(endwith_positions)
+    ):
+        next_with_pos = (
+            with_starts[with_idx][0] if with_idx < len(with_starts) else float("inf")
+        )
+        next_endwith_pos = (
+            endwith_positions[endwith_idx]
+            if endwith_idx < len(endwith_positions)
+            else float("inf")
+        )
 
         if next_with_pos < next_endwith_pos:
             stack.append(with_starts[with_idx])
@@ -567,7 +606,9 @@ def build_nested_context(variable_paths: dict[str, str | None]) -> dict:
             for i in range(1, SAMPLE_ITEMS_COUNT + 1):
                 sample_key = _generate_sample_dict_key(coll_path, i)
                 if value_is_list:
-                    value[sample_key] = [copy.deepcopy(inner_item) if inner_item else {}]
+                    value[sample_key] = [
+                        copy.deepcopy(inner_item) if inner_item else {}
+                    ]
                 else:
                     value[sample_key] = copy.deepcopy(inner_item) if inner_item else {}
         else:  # list, values, keys
