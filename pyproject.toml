@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neutronium"
-version = "0.2.1"
+version = "0.2.2"
 description = "Framework-agnostic Python utilities: text, time, iterables, structured logging, telemetry primitives, and more."
 readme = "README.md"
 license = "MIT"
@@ -34,6 +34,7 @@ Issues = "https://github.com/gaussian/neutronium/issues"
 dev = [
   "pytest>=8.0",
   "moto>=5",
+  "ruff>=0.10",
 ]
 
 [tool.setuptools.packages.find]
@@ -41,3 +42,12 @@ include = ["neutronium*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+# Ruff's default rule set (pyflakes + core pycodestyle), minus two rules that
+# produce false positives on this codebase:
+#   F401 (imported-but-unused): fires on side-effect imports and re-exports that
+#         are load-bearing despite looking unused. F821 (undefined name) still
+#         catches genuinely-missing imports, so correctness is unaffected.
+#   F841 (unused local): the codebase has intentional demo assignments.
+ignore = ["F401", "F841"]

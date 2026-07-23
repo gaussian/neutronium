@@ -1,7 +1,7 @@
 import types
 from itertools import chain, starmap, islice
 
-from typing import Collection, Iterable, List, Any, Tuple, Dict
+from typing import Iterable, List, Any, Tuple, Dict
 
 
 def batch(iterable: Iterable, batch_size):
@@ -169,7 +169,6 @@ def is_in_sequence(list_inner: list, list_outer: list):
     # Iterate through parent list (i) and inner list (j)
     i, j = 0, 0
     while i < len(list_outer):
-
         # Check if values are the same - if so, advance i and j
         if list_outer[i] == list_inner[j]:
             i += 1

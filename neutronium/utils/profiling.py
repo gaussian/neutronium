@@ -38,6 +38,7 @@ def with_cprofile_segment(func):
         result = func(*args, **kwargs)
         end_cprofile_segment()
         return result
+
     return profiled_func
 
 
@@ -66,14 +67,20 @@ try:
                     return func(*args, **kwargs)
                 finally:
                     profiler.print_stats()
+
             return profiled_func
+
         return inner
 
 except ImportError:
+
     def do_profile(follow=[]):
         """Helpful if you accidentally leave in production!"""
+
         def inner(func):
             def nothing(*args, **kwargs):
                 return func(*args, **kwargs)
+
             return nothing
+
         return inner

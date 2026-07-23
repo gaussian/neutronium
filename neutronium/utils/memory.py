@@ -11,7 +11,7 @@ def print_top_heap_memory_objects(n=20):
     """
     import sys
     from pympler import asizeof
-   
+
     modules_memory = {}
     for name, module in list(sys.modules.items()):
         if not module:
@@ -23,10 +23,12 @@ def print_top_heap_memory_objects(n=20):
             print(f"Skipping module {name} due to error: {e}")
             continue
         modules_memory[name] = size
-   
+
     # Print the top n memory-consuming modules:
-    for name, size in sorted(modules_memory.items(), key=lambda item: item[1], reverse=True)[:n]:
-        print(f"{name}: {size/1024:.2f} KB")
+    for name, size in sorted(
+        modules_memory.items(), key=lambda item: item[1], reverse=True
+    )[:n]:
+        print(f"{name}: {size / 1024:.2f} KB")
 
 
 def print_memory_usage(label=None):
@@ -39,10 +41,16 @@ def print_memory_usage(label=None):
     import os
     import psutil
 
-    MEGA = 10 ** 6
+    MEGA = 10**6
 
     svm = psutil.virtual_memory()
-    total, available, percent, used, free = svm.total / MEGA, svm.available / MEGA, svm.percent, svm.used / MEGA, svm.free / MEGA
+    total, available, percent, used, free = (
+        svm.total / MEGA,
+        svm.available / MEGA,
+        svm.percent,
+        svm.used / MEGA,
+        svm.free / MEGA,
+    )
     proc = psutil.Process(os.getpid()).memory_info().rss / MEGA
     data_points = [
         f"process = {proc}",
@@ -50,7 +58,7 @@ def print_memory_usage(label=None):
         f"available = {available}",
         f"used = {used}",
         f"free = {free}",
-        f"percent = {percent}"
+        f"percent = {percent}",
     ]
     message = " // ".join(data_points)
     if label:
@@ -69,4 +77,5 @@ def print_memory_growth(label=None):
 
 def print_ref_graph(obj):
     import objgraph
-    objgraph.show_refs([obj], filename='sample-graph.png')
+
+    objgraph.show_refs([obj], filename="sample-graph.png")

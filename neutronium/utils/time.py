@@ -16,9 +16,7 @@ def get_time_ago(num_days, time_ago_from=None, set_time_to_midnight=False):
 
     # Set the time portion to be 0 for midnight
     if set_time_to_midnight:
-        time_ago_from = time_ago_from.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        time_ago_from = time_ago_from.replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Return now minus the number of days
     return time_ago_from - datetime.timedelta(days=num_days)
@@ -36,11 +34,21 @@ def get_time_diff_days(time_til, time_ago_from=None):
 
 
 def get_year_start(year):
-    return datetime.datetime(year=year, month=1, day=1, hour=0, minute=0, second=0, tzinfo=ZoneInfo("UTC"))
+    return datetime.datetime(
+        year=year, month=1, day=1, hour=0, minute=0, second=0, tzinfo=ZoneInfo("UTC")
+    )
 
 
 def get_year_end(year):
-    return datetime.datetime(year=year, month=12, day=31, hour=23, minute=59, second=59, tzinfo=ZoneInfo("UTC"))
+    return datetime.datetime(
+        year=year,
+        month=12,
+        day=31,
+        hour=23,
+        minute=59,
+        second=59,
+        tzinfo=ZoneInfo("UTC"),
+    )
 
 
 def get_day_start(date):
@@ -55,7 +63,6 @@ def localize_to_utc(date: Optional[datetime.datetime]) -> Optional[datetime.date
 
     # If date exists
     if date:
-
         # If date is timezone-naive
         if date.tzinfo is None or date.tzinfo.utcoffset(date) is None:
             return date.replace(tzinfo=ZoneInfo("UTC"))
@@ -73,7 +80,9 @@ def validate_date(date):
         return False
 
     now = datetime.datetime.now(tz=ZoneInfo("UTC"))
-    if date > now + datetime.timedelta(days=15) or date < datetime.datetime(1971, 1, 1, tzinfo=ZoneInfo("UTC")):
+    if date > now + datetime.timedelta(days=15) or date < datetime.datetime(
+        1971, 1, 1, tzinfo=ZoneInfo("UTC")
+    ):
         return False
 
     return True

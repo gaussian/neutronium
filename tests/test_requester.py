@@ -10,7 +10,9 @@ def _requester_with_failing_session(**kwargs):
     """A Requester whose session always raises a connection error on GET."""
     session = MagicMock()
     session.get.side_effect = requests.exceptions.ConnectionError("boom")
-    return Requester(session=session, try_optimize_url=False, try_handle_paywall=False, **kwargs)
+    return Requester(
+        session=session, try_optimize_url=False, try_handle_paywall=False, **kwargs
+    )
 
 
 def test_requester_error_is_exception():
