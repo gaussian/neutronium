@@ -33,7 +33,6 @@ class SimpleThread(threading.Thread):
 
 
 class SimpleThreadManager:
-
     def __init__(self, pass_through_exceptions=False):
         self.threads = []
         self.results_list = []

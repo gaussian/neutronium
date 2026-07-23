@@ -17,7 +17,7 @@ def test_xpath_extracts_text():
 
 def test_good_links_skips_nofollow_keeps_fragments_by_default():
     html = (
-        '<html><body>'
+        "<html><body>"
         '<a href="http://a.com">A</a>'
         '<a href="#frag">F</a>'
         '<a href="http://b.com" rel="nofollow">B</a>'
@@ -26,8 +26,8 @@ def test_good_links_skips_nofollow_keeps_fragments_by_default():
     obj = get_xml_obj_from_html(html)
     links = list(get_good_links_from_xml_obj(obj))
     assert "http://a.com" in links
-    assert "http://b.com" not in links   # nofollow skipped by default
-    assert "#frag" in links              # fragments kept by default (allow_fragments=True)
+    assert "http://b.com" not in links  # nofollow skipped by default
+    assert "#frag" in links  # fragments kept by default (allow_fragments=True)
 
 
 def test_allow_fragments_false_skips_fragments():

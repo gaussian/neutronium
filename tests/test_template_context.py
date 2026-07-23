@@ -1,11 +1,7 @@
-import pytest
-
 from neutronium.utils.template_context import (
     extract_template_variables_full,
     generate_fake_value,
     build_nested_context,
-    TEMPLATE_BUILTINS,
-    FRAMEWORK_VARS,
 )
 
 
@@ -62,7 +58,9 @@ class TestExtractTemplateVariablesFull:
         assert "items.0.name" in result
 
     def test_for_loop_nested_variable(self):
-        template = "{% for record in section_data.records %}{{ record.name }}{% endfor %}"
+        template = (
+            "{% for record in section_data.records %}{{ record.name }}{% endfor %}"
+        )
         result = extract_template_variables_full(template)
         assert "section_data.records" in result
         assert result["section_data.records"] == "list"
@@ -368,14 +366,18 @@ class TestTemplateContextIntegration:
 
         # sections VALUE is a dict (we access .name and .groupings on it)
         section = sections["Sample Section 1"]
-        assert isinstance(section, dict), "dict value should be dict when properties are accessed"
+        assert isinstance(section, dict), (
+            "dict value should be dict when properties are accessed"
+        )
         assert "name" in section
         assert "groupings" in section
         assert isinstance(section["groupings"], dict)
 
         # groupings VALUE is a list (we iterate: {% for record in records %})
         records = section["groupings"]["Sample Grouping 1"]
-        assert isinstance(records, list), "groupings value should be list because it's iterated"
+        assert isinstance(records, list), (
+            "groupings value should be list because it's iterated"
+        )
         assert "body" in records[0]
         assert "name" in records[0]
 
@@ -445,9 +447,9 @@ class TestTemplateContextIntegration:
         # record_data (the dict value) should be dict, NOT list
         # because we access .name and .sections (property access, not iteration)
         record_data = record_groups["Sample Record Group 1"]
-        assert isinstance(
-            record_data, dict
-        ), "dict value should be dict when properties are accessed"
+        assert isinstance(record_data, dict), (
+            "dict value should be dict when properties are accessed"
+        )
         assert "name" in record_data
         assert "sections" in record_data
 
@@ -512,9 +514,9 @@ class TestTemplateContextIntegration:
         # Critical: top_mentions items should have nested properties
         mention = trackable["top_mentions"][0]
         assert "text" in mention, "mention should have 'text' property"
-        assert (
-            "document_piece" in mention
-        ), "mention should have 'document_piece' property"
+        assert "document_piece" in mention, (
+            "mention should have 'document_piece' property"
+        )
         assert isinstance(mention["document_piece"], dict)
         assert "sentiment_compound" in mention["document_piece"]
         assert "document" in mention["document_piece"]
@@ -616,6 +618,6 @@ class TestTemplateContextIntegration:
         assert "text" in mention2["document_piece"]
 
         # Cross-contamination should NOT happen
-        assert (
-            "text" not in mention2
-        ), "user_trackable.mentions should NOT have top-level 'text'"
+        assert "text" not in mention2, (
+            "user_trackable.mentions should NOT have top-level 'text'"
+        )

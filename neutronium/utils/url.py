@@ -1,26 +1,71 @@
-
 import logging
 from urllib.parse import urlparse, parse_qs, urljoin, urlencode, ParseResult
-from typing import Tuple, Any, Optional, List, Iterable, Set
+from typing import Tuple, Any, Optional, Iterable, Set
 
 
 logger = logging.getLogger(__name__)
 
-BAD_QUERY_PARAMS = frozenset([
-    "gclid", "mkt_tok", "sid", "atrkid", "goal", "_hsenc", "_hsmi", "__hssc", "__hstc", "hsCtaTracking",
-    "cx", "ie", "cof", "siteurl", "zanpid", "origin", "refid", "refsrc", "time2", "sa", "ved", "sqi",
-    "elqTrackId", "redirect_uri", "redirect_url", "response_type", "_wcsid", "ss", "rt", "epik",
-    "cspchd", "elqaid", "_sm_byp", "from", "isappinstalled", "hl", "form", "setlang", "pc", "omwq",
-    "inf_contact_key", "pos", "feedref",
-])
+BAD_QUERY_PARAMS = frozenset(
+    [
+        "gclid",
+        "mkt_tok",
+        "sid",
+        "atrkid",
+        "goal",
+        "_hsenc",
+        "_hsmi",
+        "__hssc",
+        "__hstc",
+        "hsCtaTracking",
+        "cx",
+        "ie",
+        "cof",
+        "siteurl",
+        "zanpid",
+        "origin",
+        "refid",
+        "refsrc",
+        "time2",
+        "sa",
+        "ved",
+        "sqi",
+        "elqTrackId",
+        "redirect_uri",
+        "redirect_url",
+        "response_type",
+        "_wcsid",
+        "ss",
+        "rt",
+        "epik",
+        "cspchd",
+        "elqaid",
+        "_sm_byp",
+        "from",
+        "isappinstalled",
+        "hl",
+        "form",
+        "setlang",
+        "pc",
+        "omwq",
+        "inf_contact_key",
+        "pos",
+        "feedref",
+    ]
+)
 
 BAD_QUERY_PARAM_STARTS = ("mr:", "mc_", "fb", "utm", "facet", "WT.")
 
 BAD_QUERY_PARAM_ENDS = ("campaign", "source", "medium", "_term")
 
-GOOD_QUERY_PARAMS = frozenset([
-    "id", "ContentId", "page", "p", "output",
-])
+GOOD_QUERY_PARAMS = frozenset(
+    [
+        "id",
+        "ContentId",
+        "page",
+        "p",
+        "output",
+    ]
+)
 
 GOOD_QUERY_PARAM_STARTS = ["date", "ref"]
 
@@ -77,8 +122,11 @@ def parse_url(url: str, correct_root: bool = True, **kwargs) -> Optional[ParseRe
     if correct_root:
         # Remove redundant ports
         netloc = url_obj.netloc
-        if ((":80/" in netloc or netloc.endswith(":80")) and url_obj.scheme == "http") or \
-                ((":443/" in netloc or netloc.endswith(":443")) and url_obj.scheme == "https"):
+        if (
+            (":80/" in netloc or netloc.endswith(":80")) and url_obj.scheme == "http"
+        ) or (
+            (":443/" in netloc or netloc.endswith(":443")) and url_obj.scheme == "https"
+        ):
             netloc = netloc.partition(":")[0]
         # Lowercase
         netloc = netloc.lower()
@@ -88,10 +136,11 @@ def parse_url(url: str, correct_root: bool = True, **kwargs) -> Optional[ParseRe
     return url_obj
 
 
-def rebuild_url(url: str,
-                url_obj: ParseResult = None,
-                aggression: int = 0,
-                ) -> Optional[str]:
+def rebuild_url(
+    url: str,
+    url_obj: ParseResult = None,
+    aggression: int = 0,
+) -> Optional[str]:
     """
     Rebuild a URL correctly, stripping query parameters if needed, and lowercasing the
     scheme and hostname.
@@ -145,15 +194,21 @@ def rebuild_url(url: str,
         return url.rstrip("/")
     # == Aggression 1: remove only bad query params
     if aggression == 1:
-        query_dict = {k: v for k, v in query_dict.items()
-                      if k not in BAD_QUERY_PARAMS and
-                      not any(k.startswith(bad_start) for bad_start in BAD_QUERY_PARAM_STARTS) and
-                      not any(k.endswith(bad_end) for bad_end in BAD_QUERY_PARAM_ENDS)}
+        query_dict = {
+            k: v
+            for k, v in query_dict.items()
+            if k not in BAD_QUERY_PARAMS
+            and not any(k.startswith(bad_start) for bad_start in BAD_QUERY_PARAM_STARTS)
+            and not any(k.endswith(bad_end) for bad_end in BAD_QUERY_PARAM_ENDS)
+        }
     # == Aggression 2: remove all except good query params
     else:
-        query_dict = {k: v for k, v in query_dict.items()
-                      if k in GOOD_QUERY_PARAMS or
-                      any(k.startswith(good_start) for good_start in GOOD_QUERY_PARAM_STARTS)}
+        query_dict = {
+            k: v
+            for k, v in query_dict.items()
+            if k in GOOD_QUERY_PARAMS
+            or any(k.startswith(good_start) for good_start in GOOD_QUERY_PARAM_STARTS)
+        }
     if query_dict:
         querystring = f"?{urlencode(query_dict, doseq=True)}"
     else:
@@ -297,7 +352,7 @@ def normalize_url(url: str) -> Optional[str]:
     url = url.partition("://")[-1] or url
     for start in ["//", "www.", "m."]:
         if url.startswith(start):
-            url = url[len(start):]
+            url = url[len(start) :]
 
     # Finally, fix the trailing slashes
     url = url.rstrip("/?").replace("/?", "?")
@@ -330,8 +385,7 @@ def get_stripped_urls(urls: Iterable[str], strip_down_to_substring: str):
     :return:
     """
     # Remember that partition() gives a tuple length 3
-    return ["".join(u.partition(strip_down_to_substring)[:2])
-            for u in urls]
+    return ["".join(u.partition(strip_down_to_substring)[:2]) for u in urls]
 
 
 def get_similar_urls(url: str) -> Optional[Set[str]]:
@@ -348,14 +402,19 @@ def get_similar_urls(url: str) -> Optional[Set[str]]:
     else:
         endings = ["/", ""]
 
-    similar_urls = set(h + w + normalized_url + e for h in ["http://", "https://", "//", ""]
-                       for w in ["www.", "m.", ""]
-                       for e in endings)
+    similar_urls = set(
+        h + w + normalized_url + e
+        for h in ["http://", "https://", "//", ""]
+        for w in ["www.", "m.", ""]
+        for e in endings
+    )
     similar_urls.add(url)
     return similar_urls
 
 
-def remove_same_norm_urls(urls: Iterable[str], bad_urls: Optional[Iterable[str]] = None) -> Set[str]:
+def remove_same_norm_urls(
+    urls: Iterable[str], bad_urls: Optional[Iterable[str]] = None
+) -> Set[str]:
     """
     Remove URLs that are HTTP/HTTPS or WWW or "/" duplicates.
     :return:
@@ -375,12 +434,13 @@ def remove_same_norm_urls(urls: Iterable[str], bad_urls: Optional[Iterable[str]]
     return set(norm_to_url.values())
 
 
-def deduplicate_urls(urls: Iterable[str],
-                     root_url: str = None,
-                     exclude_root: bool = False,
-                     canonize: bool = False,
-                     bad_patterns: Optional[Iterable[str]] = None
-                     ) -> Set[str]:
+def deduplicate_urls(
+    urls: Iterable[str],
+    root_url: str = None,
+    exclude_root: bool = False,
+    canonize: bool = False,
+    bad_patterns: Optional[Iterable[str]] = None,
+) -> Set[str]:
     """
     Deduplicate URLs (and fully canonize, if needed, including correcting relative URLs).
     """
@@ -411,7 +471,9 @@ def link2email(url: str) -> str:
     return url + "utm_source"
 
 
-def extract_dict_from_query_params(query_params, possible_param_definitions: Iterable[Tuple[str, type, Any]]):
+def extract_dict_from_query_params(
+    query_params, possible_param_definitions: Iterable[Tuple[str, type, Any]]
+):
     """
     Extracts and converts QueryDict into a correctly typed dict.
 
@@ -428,18 +490,19 @@ def extract_dict_from_query_params(query_params, possible_param_definitions: Ite
     """
 
     def get_param_from_def(param_name, param_type, param_default):
-        if param_type == list:
+        if param_type is list:
             param = query_params.getlist(param_name, None)
         else:
             param = query_params.get(param_name, None)
         if param:
-            if param_type == int:
+            if param_type is int:
                 param = int(param)
-            elif param_type == bool:
+            elif param_type is bool:
                 param = param.lower() == "true"
         else:
             param = param_default
         return param
 
-    return {pn: get_param_from_def(pn, pt, pd)
-            for pn, pt, pd in possible_param_definitions}
+    return {
+        pn: get_param_from_def(pn, pt, pd) for pn, pt, pd in possible_param_definitions
+    }

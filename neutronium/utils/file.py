@@ -35,7 +35,6 @@ def load_pickle_from_file_or_function(file_path: str, obj_create_func):
 
     # File doesn't exist
     if not obj:
-
         # Create the object
         obj = obj_create_func()
 
@@ -94,7 +93,9 @@ def load_json_from_file(file_path: str, encoding=None) -> dict | list | None:
         return None
 
     # Remove comments (both single-line and multi-line)
-    file_contents = re.sub(r"//.*?\n", "\n", file_contents)  # Remove single-line comments
+    file_contents = re.sub(
+        r"//.*?\n", "\n", file_contents
+    )  # Remove single-line comments
     file_contents = re.sub(
         r"/\*.*?\*/", "", file_contents, flags=re.DOTALL
     )  # Remove multi-line comments

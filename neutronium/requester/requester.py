@@ -87,9 +87,10 @@ class Requester:
         # Wrapper to catch content consumption errors and close connection
         new_url = None
         try:
-
             # Get response metadata
-            new_url, content_type, content_length = self._get_response_meta(open_response)
+            new_url, content_type, content_length = self._get_response_meta(
+                open_response
+            )
             new_url = new_url or original_url
 
             # Special handling to detect login/paywall pages
@@ -153,7 +154,6 @@ class Requester:
 
             # Read (consume) the content then return
             if open_response and success:
-
                 # Trust the charset requests resolved from the HTTP header; do NOT
                 # consult apparent_encoding — its chardet backend mis-detects some
                 # HTML as utf-7 and garbles the body. Only when the header gave no
@@ -246,7 +246,6 @@ class Requester:
         error_message = None
 
         try:
-
             # Existing response, no need to fetch, otherwise fetch
             if response:
                 pass
@@ -281,7 +280,6 @@ class Requester:
             # We received a 200 response - we're nearly OK...
             else:
                 try:
-
                     # We used "stream" mode, so content hasn't been read yet - make
                     # sure it isn't too big
                     # TODO: make this more general
@@ -341,9 +339,7 @@ class Requester:
             else:
                 success = False
             if not success:
-                error_message = (
-                    f"SSL error while downloading {url} ({self.log_context}), detail: {e}"
-                )
+                error_message = f"SSL error while downloading {url} ({self.log_context}), detail: {e}"
                 log_error = True
 
         # Some connection error (retry)
@@ -356,9 +352,7 @@ class Requester:
         # Other request error (don't retry)
         except requests.exceptions.RequestException as e:
             success = False
-            error_message = (
-                f"Other request error downloading {url} ({self.log_context}), detail: {e}"
-            )
+            error_message = f"Other request error downloading {url} ({self.log_context}), detail: {e}"
             log_error = True
             allow_retry = True  # need this to log error without recursing
 
@@ -394,7 +388,6 @@ class Requester:
         url, content_type, content_length = None, None, 0
 
         if response:
-
             # URL (canonize it to remove bad URL params)
             url = canonize_url(response.url)
 
@@ -462,7 +455,9 @@ class Requester:
                 end_idx = html.find(">", start_idx, start_idx + 300)
                 if end_idx != -1:
                     # Regex search on small chunk of text
-                    matches = re.findall(attr + r"=\"([^\s]+)\"", html[start_idx:end_idx])
+                    matches = re.findall(
+                        attr + r"=\"([^\s]+)\"", html[start_idx:end_idx]
+                    )
                     if matches:
                         # Canonize if found, passing in the current URL as the root (this will
                         # correct relative URLs)
