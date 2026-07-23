@@ -18,19 +18,11 @@ telemetry primitives, and more). Pure-Python library published to PyPI.
   cut from the version already in the files, then `publish.yml` ships it). The
   release workflow does **not** bump the version — it only reads it.
 
-## Versioning — IMPORTANT
+## Opening PRs & versioning
 
-The version is a static string in `pyproject.toml`, `neutronium/__init__.py`, and
-`uv.lock`. It is **not** bumped automatically on merge. **When you open a PR you
-must also bump the version**, otherwise no release is cut.
+The version is a static string (`pyproject.toml`, `neutronium/__init__.py`,
+`uv.lock`) and is **not** bumped automatically on merge — it must be bumped
+deliberately, or no release is cut.
 
-Bump it by running the **Bump Version** GitHub Actions workflow (it commits the
-bump to `develop`):
-
-```
-gh workflow run "Bump Version" --ref develop -f bump_type=patch
-```
-
-Use `patch` unless a larger bump is explicitly called for (`minor` / `major`).
-
-See the `create-merge-pr` skill in `.agents/skills/` for the full PR workflow.
+**Follow the `create-merge-pr` skill** (`.agents/skills/create-merge-pr/`) for the
+full PR workflow, including when and how to bump the version.

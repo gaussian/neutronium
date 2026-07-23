@@ -34,8 +34,11 @@ it in your branch.)
 
 ## 3. Merge
 
+Use a merge commit — **do not squash** (it loses the individual commits, and the
+bump commit lives separately on `develop`):
+
 ```
-gh pr merge --squash --delete-branch
+gh pr merge --merge --delete-branch
 ```
 
 Checks (`lint`, `pytest`) run automatically and must pass — `main` is protected,
