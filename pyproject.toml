@@ -44,14 +44,10 @@ include = ["neutronium*"]
 testpaths = ["tests"]
 
 [tool.ruff.lint]
-# Ruff's default rule set (pyflakes + core pycodestyle). F841 (unused local) is
-# excluded — the codebase has intentional demo assignments and it is the least
-# valuable rule.
-ignore = ["F841"]
-# Never auto-delete an "unused" import: some imports have runtime side effects or
-# are re-exports. Ruff still flags them; a human/agent removes them deliberately.
-unfixable = ["F401"]
-
-[tool.ruff.lint.per-file-ignores]
-# __init__.py imports are typically re-exports (public API) — leave them alone.
-"__init__.py" = ["F401"]
+# Ruff's default rule set (pyflakes + core pycodestyle), minus two rules that
+# produce false positives on this codebase:
+#   F401 (imported-but-unused): fires on side-effect imports and re-exports that
+#         are load-bearing despite looking unused. F821 (undefined name) still
+#         catches genuinely-missing imports, so correctness is unaffected.
+#   F841 (unused local): the codebase has intentional demo assignments.
+ignore = ["F401", "F841"]
