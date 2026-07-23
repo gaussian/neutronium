@@ -41,3 +41,16 @@ jobs:
           python-version: '3.12'
       - name: Run tests
         run: uv run --all-extras pytest
+
+  # Aggregator gate — the ONLY check the branch ruleset needs to require. It
+  # passes only if every job it needs succeeded. To add a check to the gate,
+  # add the job here and list it in `needs` — no ruleset edit required.
+  ci:
+    name: ci
+    needs: [lint, pytest]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All required checks passed
+        run: |
+          [ "${{ needs.lint.result }}" = "success" ] && [ "${{ needs.pytest.result }}" = "success" ] || { echo "a required job did not succeed"; exit 1; }
