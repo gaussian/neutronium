@@ -1,3 +1,4 @@
+import tarfile
 from unittest.mock import patch
 
 import boto3
@@ -62,3 +63,73 @@ def test_clear_s3_dir_safe_deletes(s3_bucket):
     )
     s3.clear_s3_dir_safe(BUCKET, "dir")
     assert s3.download_from_s3("dir/1.txt", BUCKET) is None
+
+
+def test_upload_from_filename_uncompressed(s3_bucket, tmp_path):
+    """`upload_file` is a managed transfer and returns None on success.
+
+    Regression: the return value used to be treated as an API response, so this
+    path raised `AttributeError` *after* the object had already been uploaded.
+    """
+    source = tmp_path / "payload.txt"
+    source.write_bytes(b"hello from a file")
+
+    assert (
+        s3.upload_to_s3(
+            s3_path="f/plain.txt",
+            s3_bucket=BUCKET,
+            filename=str(source),
+            do_not_overwrite=False,
+        )
+        is None
+    )
+    assert s3.download_from_s3("f/plain.txt", BUCKET) == b"hello from a file"
+
+
+def test_upload_from_filename_compressed(s3_bucket, tmp_path):
+    source = tmp_path / "payload.txt"
+    source.write_bytes(b"hello compressed")
+
+    assert (
+        s3.upload_to_s3(
+            s3_path="f/gz.txt",
+            s3_bucket=BUCKET,
+            filename=str(source),
+            compress=True,
+            do_not_overwrite=False,
+        )
+        is None
+    )
+    assert (
+        s3.download_from_s3("f/gz.txt", BUCKET, decompress=True, encoding="utf8")
+        == "hello compressed"
+    )
+
+
+def test_upload_dir_to_s3_uploads_restorable_tarball(s3_bucket, tmp_path):
+    """`upload_dir_to_s3` goes through the uncompressed filename path."""
+    source_dir = tmp_path / "bundle"
+    (source_dir / "nested").mkdir(parents=True)
+    (source_dir / "nested" / "inner.txt").write_text("nested file")
+
+    s3.upload_dir_to_s3(
+        source_directory=str(source_dir),
+        s3_path="f/bundle.tar.gz",
+        s3_bucket=BUCKET,
+    )
+
+    downloaded = tmp_path / "bundle.tar.gz"
+    downloaded.write_bytes(s3.download_from_s3("f/bundle.tar.gz", BUCKET))
+    with tarfile.open(downloaded, "r:gz") as tar:
+        member = next(n for n in tar.getnames() if n.endswith("nested/inner.txt"))
+        assert tar.extractfile(member).read() == b"nested file"
+
+
+def test_upload_dir_to_s3_rejects_uncollected_directories(tmp_path):
+    with pytest.raises(NotImplementedError):
+        s3.upload_dir_to_s3(
+            source_directory=str(tmp_path),
+            s3_path="f/nope",
+            s3_bucket=BUCKET,
+            archive=False,
+        )
