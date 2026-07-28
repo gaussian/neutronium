@@ -115,7 +115,13 @@ def upload_to_s3(
                 )
                 compressed_file_obj.close()
         else:
-            response = s3.upload_file(Filename=filename, **upload_params)
+            # `upload_file` is a managed transfer rather than a single API call:
+            # it returns None on success and raises on failure, so there is no
+            # response envelope to inspect for a status code.
+            s3.upload_file(Filename=filename, **upload_params)
+            if verbose:
+                print(f"Uploaded {filename} to S3")
+            return None
 
     # Actual content was provided, not the filename
     else:
