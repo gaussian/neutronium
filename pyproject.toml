@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neutronium"
-version = "0.2.5"
+version = "0.2.6"
 description = "Framework-agnostic Python utilities: text, time, iterables, structured logging, telemetry primitives, and more."
 readme = "README.md"
 license = "MIT"
