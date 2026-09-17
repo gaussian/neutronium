@@ -314,22 +314,12 @@ def canonize_url(url: str, root_url=None) -> Optional[str]:
     return url
 
 
-def normalize_url(url: str) -> Optional[str]:
+def _normalize_url(url: str, lowercase: bool) -> Optional[str]:
     """
-    Normalize the URL, stripping scheme, www, bad querystrings, extra slashes.
-
-    This should be used for comparing URLs to each other, but is NOT safe to
-    use as downloadable URLs (for this, use `canonize_url()`), because we may
-    damage the URL in this process.
+    Shared body of `normalize_url()`, minus the cache. With `lowercase=False` the
+    host is still lower-cased (by `parse_url()`) but the path keeps its case, the
+    same shape as `canonize_url()` output.
     """
-
-    # Get from cache if possible
-    global normalized_url_cache
-    cache_key = url
-    if USE_CACHE:
-        cache_value = normalized_url_cache.get(cache_key, None)
-        if cache_value:
-            return cache_value
 
     # First strip bad query params (aggression=1 means only bad ones are stripped)
     url_obj = parse_url(url)
@@ -340,7 +330,8 @@ def normalize_url(url: str) -> Optional[str]:
         return None
 
     # Next, lowercase
-    url = url.lower()
+    if lowercase:
+        url = url.lower()
 
     # Next, remove ports (e.g. //boeing.com:443)
     if ":" in url_obj.netloc:
@@ -355,7 +346,30 @@ def normalize_url(url: str) -> Optional[str]:
             url = url[len(start) :]
 
     # Finally, fix the trailing slashes
-    url = url.rstrip("/?").replace("/?", "?")
+    return url.rstrip("/?").replace("/?", "?")
+
+
+def normalize_url(url: str) -> Optional[str]:
+    """
+    Normalize the URL, stripping scheme, www, bad querystrings, extra slashes,
+    and lowercasing.
+
+    This should be used for comparing URLs to each other, but is NOT safe to
+    use as downloadable URLs (for this, use `canonize_url()`), because we may
+    damage the URL in this process.
+    """
+
+    # Get from cache if possible
+    global normalized_url_cache
+    cache_key = url
+    if USE_CACHE:
+        cache_value = normalized_url_cache.get(cache_key, None)
+        if cache_value:
+            return cache_value
+
+    url = _normalize_url(url, lowercase=True)
+    if url is None:
+        return None
 
     # Store in cache if possible, OR wipe the cache if too many URLs
     if USE_CACHE:
@@ -391,8 +405,10 @@ def get_stripped_urls(urls: Iterable[str], strip_down_to_substring: str):
 def get_similar_urls(url: str) -> Optional[Set[str]]:
     """
     Get the set of URLs which should be considered duplicative of this URL.
+    Variants keep the input's path case (host lower-cased) — the shape of
+    `canonize_url()` output — so they match stored canonized URLs exactly.
     """
-    normalized_url = normalize_url(url)
+    normalized_url = _normalize_url(url, lowercase=False)
     if not normalized_url:
         return set()
 

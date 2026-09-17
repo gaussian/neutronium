@@ -37,3 +37,16 @@ def test_get_url_domain_with_subdomain():
         url.get_url_domain("http://www.boeing.co.uk", include_subdomain=True)
         == "www.boeing.co.uk"
     )
+
+
+def test_normalize_url_lowercases():
+    assert url.normalize_url("https://WWW.Example.com/Press/2024/") == (
+        "example.com/press/2024"
+    )
+
+
+def test_get_similar_urls_keeps_path_case():
+    similar = url.get_similar_urls("https://WWW.Example.com/Press/2024/")
+    assert "https://example.com/Press/2024" in similar
+    assert "http://www.example.com/Press/2024/" in similar
+    assert not any("press" in u for u in similar)
