@@ -26,6 +26,7 @@ pip install neutronium[xpath]       # lxml-backed HTML/XPath helpers
 | `neutronium.requester` | Resilient HTTP fetcher with retries/paywall/no-index detection (`[requests]`) |
 | `neutronium.utils.file` | Pickle / text / JSONC file helpers |
 | `neutronium.utils.performance` | Simple multi-level timer |
+| `neutronium.utils.email` | Canonical email normalization |
 | `neutronium.utils.{aws,ssm,s3}` | EC2/ECS instance metadata, SSM parameter fetch, S3 upload/download (`[aws]`) |
 | `neutronium.utils.{print,params,profiling,memory,url_credentials}` | Assorted small utilities |
 | `neutronium.threads.thread_simple` | Minimal threading helpers |
