@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neutronium"
-version = "0.3.1"
+version = "0.3.2"
 description = "Framework-agnostic Python utilities: text, time, iterables, structured logging, telemetry primitives, and more."
 readme = "README.md"
 license = "MIT"
@@ -53,3 +53,7 @@ testpaths = ["tests"]
 #   F841 (unused local): the codebase has intentional demo assignments.
 select = ["E4", "E7", "E9", "F"]
 ignore = ["F401", "F841"]
+
+[tool.uv]
+# Dependency cooldown: never resolve a release under 7 days old.
+exclude-newer = "7 days"
