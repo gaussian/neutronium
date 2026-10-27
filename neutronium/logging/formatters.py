@@ -35,7 +35,20 @@ class JsonFormatter(logging.Formatter):
         "duration_ms": "duration_ms",
         "user.is_privileged": "user.is_privileged",
         "django.view": "django.view",
+        # Task run fields
+        "task.id": "task.id",
+        "task.name": "task.name",
+        "task.state": "task.state",
+        "task.next": "task.next",
+        "object.id": "object.id",
     }
+
+    def __init__(self, *args, extra_fields=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        # App-added fields keep their name; built-in mappings win on clashes
+        self.context_fields = self.CONTEXT_FIELDS | {
+            f: f for f in extra_fields if f not in self.CONTEXT_FIELDS
+        }
 
     def format(self, record: logging.LogRecord) -> str:
         # Build payload with explicit field ordering
@@ -52,7 +65,7 @@ class JsonFormatter(logging.Formatter):
             payload["service.name"] = SERVICE_NAME
 
         # Add context fields (injected by ContextFilter)
-        for attr, output_name in self.CONTEXT_FIELDS.items():
+        for attr, output_name in self.context_fields.items():
             value = getattr(record, attr, None)
             if value is not None:
                 payload[output_name] = value
