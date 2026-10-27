@@ -35,6 +35,12 @@ class JsonFormatter(logging.Formatter):
         "duration_ms": "duration_ms",
         "user.is_privileged": "user.is_privileged",
         "django.view": "django.view",
+        # Task run fields
+        "task.id": "task.id",
+        "task.name": "task.name",
+        "task.state": "task.state",
+        "task.next": "task.next",
+        "object.id": "object.id",
     }
 
     def format(self, record: logging.LogRecord) -> str:
