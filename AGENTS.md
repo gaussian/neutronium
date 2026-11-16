@@ -7,7 +7,8 @@ telemetry primitives, and more). Pure-Python library published to PyPI.
 
 - Source: `neutronium/`
 - Tests: `tests/` — run with `uv run --all-extras pytest`
-- Lint + format: `uv run --all-extras ruff check neutronium/ tests/` and `ruff format --check neutronium/ tests/` (config in `pyproject.toml`)
+- Lint + format: `uv run --all-extras ruff check neutronium/ tests/` and `uv run --all-extras ruff format --check neutronium/ tests/` (config in `pyproject.toml`)
+- Type check: none configured (no mypy/pyright). CI's nearest equivalent is a compile check: `uv run --all-extras python -m compileall -q neutronium/`
 - Default working branch: `develop`. Releases flow `develop` → `main`.
 - Dependency cooldown: a 7-day cooldown is set by `exclude-newer` under `[tool.uv]` in `pyproject.toml`. For an urgent fix, add `<pkg> = false` under `exclude-newer-package`, run `uv lock --upgrade-package <pkg>`, and remove the exemption once the release is over 7 days old.
 
@@ -25,5 +26,6 @@ The version is a static string (`pyproject.toml`, `neutronium/__init__.py`,
 `uv.lock`) and is **not** bumped automatically on merge — it must be bumped
 deliberately, or no release is cut.
 
-**Follow the `create-merge-pr` skill** (`.agents/skills/create-merge-pr/`) for the
-full PR workflow, including when and how to bump the version.
+**Follow the `create-merge-pr` skill** (the machine-wide skill, installed by lobster
+into `~/.agents/skills/create-merge-pr/`) for the full PR workflow, including when
+and how to bump the version.
